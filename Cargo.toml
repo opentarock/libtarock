@@ -1,0 +1,10 @@
+[package]
+name = "tarock"
+version = "0.0.1"
+authors = ["Arjan Topolovec <arjan.top@gmail.com"]
+
+[lib]
+name = "tarock"
+
+[dev-dependencies.quickcheck]
+git = "https://github.com/BurntSushi/quickcheck"
