@@ -116,8 +116,8 @@ impl Card {
     }
 
     pub fn value(&self) -> uint {
-        match self {
-            &SuitCard(rank, _) => {
+        match *self {
+            SuitCard(rank, _) => {
                 match rank {
                     King  => 5,
                     Queen => 4,
@@ -126,7 +126,7 @@ impl Card {
                     _ => 0
                 }
             }
-            &TarockCard(tarock) => {
+            TarockCard(tarock) => {
                 match tarock {
                     Tarock1 | Tarock21 | TarockSkis => 5,
                     _ => 0
@@ -227,7 +227,7 @@ pub struct Trick {
 }
 
 impl Trick {
-    fn empty() -> Trick {
+    pub fn empty() -> Trick {
         Trick {cards: Vec::new()}
     }
 
@@ -240,6 +240,15 @@ impl Trick {
     pub fn add_card(&mut self, card: Card) {
         self.cards.push(card);
     }
+
+    pub fn clear(&mut self) {
+        self.cards.clear()
+    }
+
+    pub fn count(&self) -> uint {
+        self.cards.len()
+    }
+
 }
 
 pub struct Pile {
@@ -290,7 +299,8 @@ mod test {
     use std::hash::Hash;
     use std::iter::AdditiveIterator;
 
-    use super::{Deck, Shuffled, Unshuffled, Pile, deal_four_player_standard};
+    use super::{TarockCard, Tarock1, Tarock2};
+    use super::{Deck, Shuffled, Unshuffled, Pile, Trick, deal_four_player_standard};
 
     impl Arbitrary for Deck<Shuffled> {
         fn arbitrary<G: Gen>(g: &mut G) -> Deck<Shuffled> {
@@ -413,5 +423,25 @@ mod test {
         let mut rng = task_rng();
         let (pile_one, pile_two) = deck_to_piles(&mut rng, deck);
         pile_one.score() + pile_two.score() == 70
+    }
+
+    #[test]
+    fn can_add_card_to_trick() {
+        let mut trick = Trick::empty();
+        assert_eq!(trick.count(), 0);
+        trick.add_card(TarockCard(Tarock1));
+        assert_eq!(trick.count(), 1);
+        trick.add_card(TarockCard(Tarock2));
+        assert_eq!(trick.count(), 2);
+    }
+
+    #[test]
+    fn can_clear_trick_cards() {
+        let mut trick = Trick::empty();
+        trick.add_card(TarockCard(Tarock1));
+        trick.add_card(TarockCard(Tarock2));
+        assert_eq!(trick.count(), 2);
+        trick.clear();
+        assert_eq!(trick.count(), 0);
     }
 }
