@@ -10,3 +10,4 @@ extern crate quickcheck_macros;
 extern crate quickcheck;
 
 pub mod cards;
+pub mod player;
