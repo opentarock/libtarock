@@ -222,6 +222,15 @@ impl Deck<Shuffled> {
     }
 }
 
+pub struct TrickWinner {
+    pub order_id: uint,
+    pub card: Card,
+}
+
+pub trait TrickMaxStrategy {
+    fn max(&self, &[Card]) -> uint;
+}
+
 pub struct Trick {
     cards: Vec<Card>,
 }
@@ -249,6 +258,13 @@ impl Trick {
         self.cards.len()
     }
 
+    fn winner<S: TrickMaxStrategy>(&self, f: S) -> TrickWinner {
+        let order_id = f.max(self.cards.as_slice());
+        TrickWinner {
+            order_id: order_id,
+            card: self.cards[order_id],
+        }
+    }
 }
 
 pub struct Pile {
