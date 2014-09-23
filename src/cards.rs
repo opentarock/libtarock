@@ -366,6 +366,7 @@ mod test {
 
     use super::{TarockCard, Tarock1, Tarock2};
     use super::{Deck, Shuffled, Unshuffled, Pile, Trick, deal_four_player_standard};
+    use super::{SuitCard, Queen, King, Hearts, Seven, Spades};
 
     impl Arbitrary for Deck<Shuffled> {
         fn arbitrary<G: Gen>(g: &mut G) -> Deck<Shuffled> {
@@ -398,6 +399,30 @@ mod test {
         for x in xs.iter() {
             set.insert(x.clone());
         }
+    }
+
+    #[test]
+    fn tarock_cards_are_ordered() {
+        assert_eq!(TarockCard(Tarock1).partial_cmp(&TarockCard(Tarock2)), Some(Less));
+        assert_eq!(TarockCard(Tarock2).partial_cmp(&TarockCard(Tarock1)), Some(Greater));
+    }
+
+    #[test]
+    fn suit_cards_are_ordered() {
+        assert_eq!(SuitCard(Queen, Hearts).partial_cmp(&SuitCard(King, Hearts)), Some(Less));
+        assert_eq!(SuitCard(King, Hearts).partial_cmp(&SuitCard(Queen, Hearts)), Some(Greater));
+    }
+
+    #[test]
+    fn tarocks_are_greater_than_suit_cards() {
+        assert_eq!(SuitCard(King, Hearts).partial_cmp(&TarockCard(Tarock1)), Some(Less));
+        assert_eq!(TarockCard(Tarock1).partial_cmp(&SuitCard(King, Hearts)), Some(Greater));
+    }
+
+    #[test]
+    fn first_card_of_different_suits_is_always_greater() {
+        assert_eq!(SuitCard(Seven, Hearts).partial_cmp(&SuitCard(King, Spades)), Some(Greater));
+        assert_eq!(SuitCard(King, Hearts).partial_cmp(&SuitCard(Seven, Spades)), Some(Greater));
     }
 
     #[test]
