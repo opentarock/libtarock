@@ -11,3 +11,4 @@ extern crate quickcheck;
 
 pub mod cards;
 pub mod player;
+pub mod contracts;

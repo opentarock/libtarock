@@ -19,30 +19,30 @@ static CARD_SUITS: [CardSuit, ..4] = [
     Diamonds,
 ];
 
-#[deriving(Clone, Show, Eq, PartialEq, Hash)]
+#[deriving(Clone, Show, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum CardRank {
-    King,
-    Queen,
-    Knight,
-    Jack,
-    Ten,
-    Nine,
-    Eight,
     Seven,
+    Eight,
+    Nine,
+    Ten,
+    Jack,
+    Knight,
+    Queen,
+    King,
 }
 
 static CARD_RANKS: [CardRank, ..8] = [
-    King,
-    Queen,
-    Knight,
-    Jack,
-    Ten,
-    Nine,
-    Eight,
     Seven,
+    Eight,
+    Nine,
+    Ten,
+    Jack,
+    Knight,
+    Queen,
+    King,
 ];
 
-#[deriving(Clone, Show, Eq, PartialEq, Hash)]
+#[deriving(Clone, Show, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum Tarock {
     Tarock1,
     Tarock2,
@@ -107,12 +107,40 @@ impl Card {
         }
     }
 
+    pub fn is_pagat(&self) -> bool {
+        match *self {
+            TarockCard(Tarock1) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_mond(&self) -> bool {
+        match *self {
+            TarockCard(Tarock21) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_skis(&self) -> bool {
+        match *self {
+            TarockCard(TarockSkis) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_valuable(&self) -> bool {
         self.value() > 0
     }
 
     pub fn is_empty(&self) -> bool {
         !self.is_valuable()
+    }
+
+    pub fn suit(&self) -> Option<CardSuit> {
+        match *self {
+            SuitCard(_, suit) => Some(suit),
+            _ => None,
+        }
     }
 
     pub fn value(&self) -> uint {
@@ -133,6 +161,31 @@ impl Card {
                 }
             }
         }
+    }
+}
+
+impl PartialOrd for Card {
+    fn partial_cmp(&self, other: &Card) -> Option<Ordering> {
+        match (*self, *other) {
+            (TarockCard(_), SuitCard(_, _)) => Some(Greater),
+            (SuitCard(_, _), TarockCard(_)) => Some(Less),
+            (SuitCard(rank, suit), SuitCard(rank_other, suit_other)) => {
+                if suit == suit_other {
+                    rank.partial_cmp(&rank_other)
+                } else {
+                    Some(Greater)
+                }
+            }
+            (TarockCard(tarock), TarockCard(tarock_other)) => {
+                tarock.partial_cmp(&tarock_other)
+            }
+        }
+    }
+}
+
+impl Ord for Card {
+    fn cmp(&self, other: &Card) -> Ordering {
+        self.partial_cmp(other).unwrap()
     }
 }
 
@@ -223,12 +276,8 @@ impl Deck<Shuffled> {
 }
 
 pub struct TrickWinner {
-    pub order_id: uint,
+    pub player_index: uint,
     pub card: Card,
-}
-
-pub trait TrickMaxStrategy {
-    fn max(&self, &[Card]) -> uint;
 }
 
 pub struct Trick {
@@ -258,11 +307,11 @@ impl Trick {
         self.cards.len()
     }
 
-    fn winner<S: TrickMaxStrategy>(&self, f: S) -> TrickWinner {
-        let order_id = f.max(self.cards.as_slice());
+    pub fn winner(&self, f: |&[Card]| -> uint) -> TrickWinner {
+        let player_index = f(self.cards.as_slice());
         TrickWinner {
-            order_id: order_id,
-            card: self.cards[order_id],
+            player_index: player_index,
+            card: self.cards[player_index],
         }
     }
 }
