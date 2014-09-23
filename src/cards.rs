@@ -12,13 +12,6 @@ pub enum CardSuit {
     Diamonds,
 }
 
-static CARD_SUITS: [CardSuit, ..4] = [
-    Clubs,
-    Spades,
-    Hearts,
-    Diamonds,
-];
-
 #[deriving(Clone, Show, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum CardRank {
     Seven,
@@ -30,17 +23,6 @@ pub enum CardRank {
     Queen,
     King,
 }
-
-static CARD_RANKS: [CardRank, ..8] = [
-    Seven,
-    Eight,
-    Nine,
-    Ten,
-    Jack,
-    Knight,
-    Queen,
-    King,
-];
 
 #[deriving(Clone, Show, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum Tarock {
@@ -67,31 +49,6 @@ pub enum Tarock {
     Tarock21,
     TarockSkis,
 }
-
-static TAROCKS: [Tarock, ..22] = [
-    Tarock1,
-    Tarock2,
-    Tarock3,
-    Tarock4,
-    Tarock5,
-    Tarock6,
-    Tarock7,
-    Tarock8,
-    Tarock9,
-    Tarock10,
-    Tarock11,
-    Tarock12,
-    Tarock13,
-    Tarock14,
-    Tarock15,
-    Tarock16,
-    Tarock17,
-    Tarock18,
-    Tarock19,
-    Tarock20,
-    Tarock21,
-    TarockSkis,
-];
 
 #[deriving(Clone, Show, Eq, PartialEq, Hash)]
 pub enum Card {
@@ -189,6 +146,122 @@ impl Ord for Card {
     }
 }
 
+pub static CARD_CLUBS_SEVEN: Card = SuitCard(Seven, Clubs);
+pub static CARD_CLUBS_EIGHT: Card = SuitCard(Eight, Clubs);
+pub static CARD_CLUBS_NINE: Card = SuitCard(Nine, Clubs);
+pub static CARD_CLUBS_TEN: Card = SuitCard(Ten, Clubs);
+pub static CARD_CLUBS_JACK: Card = SuitCard(Jack, Clubs);
+pub static CARD_CLUBS_KNIGHT: Card = SuitCard(Knight, Clubs);
+pub static CARD_CLUBS_QUEEN: Card = SuitCard(Queen, Clubs);
+pub static CARD_CLUBS_KING: Card = SuitCard(King, Clubs);
+
+pub static CARD_SPADES_SEVEN: Card = SuitCard(Seven, Spades);
+pub static CARD_SPADES_EIGHT: Card = SuitCard(Eight, Spades);
+pub static CARD_SPADES_NINE: Card = SuitCard(Nine, Spades);
+pub static CARD_SPADES_TEN: Card = SuitCard(Ten, Spades);
+pub static CARD_SPADES_JACK: Card = SuitCard(Jack, Spades);
+pub static CARD_SPADES_KNIGHT: Card = SuitCard(Knight, Spades);
+pub static CARD_SPADES_QUEEN: Card = SuitCard(Queen, Spades);
+pub static CARD_SPADES_KING: Card = SuitCard(King, Spades);
+
+pub static CARD_HEARTS_SEVEN: Card = SuitCard(Seven, Hearts);
+pub static CARD_HEARTS_EIGHT: Card = SuitCard(Eight, Hearts);
+pub static CARD_HEARTS_NINE: Card = SuitCard(Nine, Hearts);
+pub static CARD_HEARTS_TEN: Card = SuitCard(Ten, Hearts);
+pub static CARD_HEARTS_JACK: Card = SuitCard(Jack, Hearts);
+pub static CARD_HEARTS_KNIGHT: Card = SuitCard(Knight, Hearts);
+pub static CARD_HEARTS_QUEEN: Card = SuitCard(Queen, Hearts);
+pub static CARD_HEARTS_KING: Card = SuitCard(King, Hearts);
+
+pub static CARD_DIAMONDS_SEVEN: Card = SuitCard(Seven, Diamonds);
+pub static CARD_DIAMONDS_EIGHT: Card = SuitCard(Eight, Diamonds);
+pub static CARD_DIAMONDS_NINE: Card = SuitCard(Nine, Diamonds);
+pub static CARD_DIAMONDS_TEN: Card = SuitCard(Ten, Diamonds);
+pub static CARD_DIAMONDS_JACK: Card = SuitCard(Jack, Diamonds);
+pub static CARD_DIAMONDS_KNIGHT: Card = SuitCard(Knight, Diamonds);
+pub static CARD_DIAMONDS_QUEEN: Card = SuitCard(Queen, Diamonds);
+pub static CARD_DIAMONDS_KING: Card = SuitCard(King, Diamonds);
+
+pub static CARD_TAROCK_PAGAT: Card = TarockCard(Tarock1);
+pub static CARD_TAROCK_2: Card = TarockCard(Tarock2);
+pub static CARD_TAROCK_3: Card = TarockCard(Tarock3);
+pub static CARD_TAROCK_4: Card = TarockCard(Tarock4);
+pub static CARD_TAROCK_5: Card = TarockCard(Tarock5);
+pub static CARD_TAROCK_6: Card = TarockCard(Tarock6);
+pub static CARD_TAROCK_7: Card = TarockCard(Tarock7);
+pub static CARD_TAROCK_8: Card = TarockCard(Tarock8);
+pub static CARD_TAROCK_9: Card = TarockCard(Tarock9);
+pub static CARD_TAROCK_10: Card = TarockCard(Tarock10);
+pub static CARD_TAROCK_11: Card = TarockCard(Tarock11);
+pub static CARD_TAROCK_12: Card = TarockCard(Tarock12);
+pub static CARD_TAROCK_13: Card = TarockCard(Tarock13);
+pub static CARD_TAROCK_14: Card = TarockCard(Tarock14);
+pub static CARD_TAROCK_15: Card = TarockCard(Tarock15);
+pub static CARD_TAROCK_16: Card = TarockCard(Tarock16);
+pub static CARD_TAROCK_17: Card = TarockCard(Tarock17);
+pub static CARD_TAROCK_18: Card = TarockCard(Tarock18);
+pub static CARD_TAROCK_19: Card = TarockCard(Tarock19);
+pub static CARD_TAROCK_20: Card = TarockCard(Tarock20);
+pub static CARD_TAROCK_MOND: Card = TarockCard(Tarock21);
+pub static CARD_TAROCK_SKIS: Card = TarockCard(TarockSkis);
+
+pub static CARDS: [Card, ..54] = [
+    CARD_CLUBS_SEVEN,
+    CARD_CLUBS_EIGHT,
+    CARD_CLUBS_NINE,
+    CARD_CLUBS_TEN,
+    CARD_CLUBS_JACK,
+    CARD_CLUBS_KNIGHT,
+    CARD_CLUBS_QUEEN,
+    CARD_CLUBS_KING,
+    CARD_SPADES_SEVEN,
+    CARD_SPADES_EIGHT,
+    CARD_SPADES_NINE,
+    CARD_SPADES_TEN,
+    CARD_SPADES_JACK,
+    CARD_SPADES_KNIGHT,
+    CARD_SPADES_QUEEN,
+    CARD_SPADES_KING,
+    CARD_HEARTS_SEVEN,
+    CARD_HEARTS_EIGHT,
+    CARD_HEARTS_NINE,
+    CARD_HEARTS_TEN,
+    CARD_HEARTS_JACK,
+    CARD_HEARTS_KNIGHT,
+    CARD_HEARTS_QUEEN,
+    CARD_HEARTS_KING,
+    CARD_DIAMONDS_SEVEN,
+    CARD_DIAMONDS_EIGHT,
+    CARD_DIAMONDS_NINE,
+    CARD_DIAMONDS_TEN,
+    CARD_DIAMONDS_JACK,
+    CARD_DIAMONDS_KNIGHT,
+    CARD_DIAMONDS_QUEEN,
+    CARD_DIAMONDS_KING,
+    CARD_TAROCK_PAGAT,
+    CARD_TAROCK_2,
+    CARD_TAROCK_3,
+    CARD_TAROCK_4,
+    CARD_TAROCK_5,
+    CARD_TAROCK_6,
+    CARD_TAROCK_7,
+    CARD_TAROCK_8,
+    CARD_TAROCK_9,
+    CARD_TAROCK_10,
+    CARD_TAROCK_11,
+    CARD_TAROCK_12,
+    CARD_TAROCK_13,
+    CARD_TAROCK_14,
+    CARD_TAROCK_15,
+    CARD_TAROCK_16,
+    CARD_TAROCK_17,
+    CARD_TAROCK_18,
+    CARD_TAROCK_19,
+    CARD_TAROCK_20,
+    CARD_TAROCK_MOND,
+    CARD_TAROCK_SKIS,
+];
+
 pub struct Hand {
     cards: Vec<Card>,
 }
@@ -256,16 +329,9 @@ impl<S> Deck<S> {
 
 impl Deck<Unshuffled> {
     pub fn new() -> Deck<Unshuffled> {
-        let mut cards = Vec::new();
-        for tarock in TAROCKS.iter() {
-            cards.push(TarockCard(*tarock));
+        Deck{
+            cards: Vec::from_slice(CARDS),
         }
-        for suit in CARD_SUITS.iter() {
-            for rank in CARD_RANKS.iter() {
-                cards.push(SuitCard(*rank, *suit));
-            }
-        }
-        Deck {cards: cards}
     }
 }
 
@@ -366,7 +432,8 @@ mod test {
 
     use super::{TarockCard, Tarock1, Tarock2};
     use super::{Deck, Shuffled, Unshuffled, Pile, Trick, deal_four_player_standard};
-    use super::{SuitCard, Queen, King, Hearts, Seven, Spades};
+    use super::{CARD_TAROCK_PAGAT, CARD_TAROCK_2, CARD_HEARTS_KING, CARD_HEARTS_QUEEN,
+        CARD_HEARTS_SEVEN, CARD_SPADES_KING};
 
     impl Arbitrary for Deck<Shuffled> {
         fn arbitrary<G: Gen>(g: &mut G) -> Deck<Shuffled> {
@@ -403,26 +470,26 @@ mod test {
 
     #[test]
     fn tarock_cards_are_ordered() {
-        assert_eq!(TarockCard(Tarock1).partial_cmp(&TarockCard(Tarock2)), Some(Less));
-        assert_eq!(TarockCard(Tarock2).partial_cmp(&TarockCard(Tarock1)), Some(Greater));
+        assert_eq!(CARD_TAROCK_PAGAT.partial_cmp(&CARD_TAROCK_2), Some(Less));
+        assert_eq!(CARD_TAROCK_2.partial_cmp(&CARD_TAROCK_PAGAT), Some(Greater));
     }
 
     #[test]
     fn suit_cards_are_ordered() {
-        assert_eq!(SuitCard(Queen, Hearts).partial_cmp(&SuitCard(King, Hearts)), Some(Less));
-        assert_eq!(SuitCard(King, Hearts).partial_cmp(&SuitCard(Queen, Hearts)), Some(Greater));
+        assert_eq!(CARD_HEARTS_QUEEN.partial_cmp(&CARD_HEARTS_KING), Some(Less));
+        assert_eq!(CARD_HEARTS_KING.partial_cmp(&CARD_HEARTS_QUEEN), Some(Greater));
     }
 
     #[test]
     fn tarocks_are_greater_than_suit_cards() {
-        assert_eq!(SuitCard(King, Hearts).partial_cmp(&TarockCard(Tarock1)), Some(Less));
-        assert_eq!(TarockCard(Tarock1).partial_cmp(&SuitCard(King, Hearts)), Some(Greater));
+        assert_eq!(CARD_HEARTS_KING.partial_cmp(&CARD_TAROCK_PAGAT), Some(Less));
+        assert_eq!(CARD_TAROCK_PAGAT.partial_cmp(&CARD_HEARTS_KING), Some(Greater));
     }
 
     #[test]
     fn first_card_of_different_suits_is_always_greater() {
-        assert_eq!(SuitCard(Seven, Hearts).partial_cmp(&SuitCard(King, Spades)), Some(Greater));
-        assert_eq!(SuitCard(King, Hearts).partial_cmp(&SuitCard(Seven, Spades)), Some(Greater));
+        assert_eq!(CARD_HEARTS_SEVEN.partial_cmp(&CARD_SPADES_KING), Some(Greater));
+        assert_eq!(CARD_SPADES_KING.partial_cmp(&CARD_HEARTS_SEVEN), Some(Greater));
     }
 
     #[test]
