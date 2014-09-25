@@ -267,8 +267,30 @@ pub struct Hand {
 }
 
 impl Hand {
+    pub fn empty() -> Hand {
+        Hand{ cards: Vec::new() }
+    }
+
+    pub fn new(cards: &[Card]) -> Hand {
+        Hand{
+            cards: Vec::from_slice(cards),
+        }
+    }
+
     pub fn size(&self) -> uint {
         self.cards.len()
+    }
+
+    pub fn has_tarock(&self) -> bool {
+        self.cards.iter().any(|card| card.is_tarock())
+    }
+
+    pub fn has_suit(&self, suit: CardSuit) -> bool {
+        self.cards.iter().any(|card| card.suit() == Some(suit))
+    }
+
+    pub fn cards(&self) -> &[Card] {
+        self.cards.as_slice()
     }
 }
 
@@ -284,7 +306,7 @@ pub fn deal_four_player_standard(cards: &[Card]) -> CardDeal {
     let mut six_card_packets = cards.chunks(6);
     let talon = six_card_packets.next().unwrap();
     let mut hands = Vec::from_fn(NUM_PLAYERS, |_| {
-        Hand {cards: Vec::with_capacity(CARDS_PER_PLAYER)}
+        Hand::empty()
     });
 
     let mut player_index = 0;
@@ -373,6 +395,22 @@ impl Trick {
         self.cards.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.count() == 0
+    }
+
+    pub fn first(&self) -> Option<Card> {
+        if self.cards.len() > 0 {
+            Some(self.cards[0])
+        } else {
+            None
+        }
+    }
+
+    pub fn cards(&self) -> &[Card] {
+        self.cards.as_slice()
+    }
+
     pub fn winner(&self, f: |&[Card]| -> uint) -> TrickWinner {
         let player_index = f(self.cards.as_slice());
         TrickWinner {
@@ -430,10 +468,7 @@ mod test {
     use std::hash::Hash;
     use std::iter::AdditiveIterator;
 
-    use super::{TarockCard, Tarock1, Tarock2};
-    use super::{Deck, Shuffled, Unshuffled, Pile, Trick, deal_four_player_standard};
-    use super::{CARD_TAROCK_PAGAT, CARD_TAROCK_2, CARD_HEARTS_KING, CARD_HEARTS_QUEEN,
-        CARD_HEARTS_SEVEN, CARD_SPADES_KING};
+    use super::*;
 
     impl Arbitrary for Deck<Shuffled> {
         fn arbitrary<G: Gen>(g: &mut G) -> Deck<Shuffled> {

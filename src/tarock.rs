@@ -1,6 +1,7 @@
 #![crate_name = "tarock"]
 #![crate_type = "lib"]
 #![feature(phase)]
+#![feature(globs)]
 
 #[cfg(test)]
 #[phase(plugin)]
