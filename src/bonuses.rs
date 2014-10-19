@@ -1,6 +1,8 @@
 use cards::{Card, TarockCard, Tarock1, Tarock21, TarockSkis, SuitCard,
     Clubs, Spades, Hearts, Diamonds, King};
 
+use contracts::Contract;
+
 pub static BONUS_TYPES: [BonusType, ..5] = [
     Trula,
     Kings,
@@ -73,6 +75,11 @@ pub fn has_trula(cards: &[Card]) -> bool {
         }
     }
     false
+}
+
+// Returns true if bonuses are allowed to be announced for the contract.
+pub fn bonuses_allowed(contract: &Contract) -> bool {
+    contract.is_normal()
 }
 
 // Checks if cards contain all four kings.

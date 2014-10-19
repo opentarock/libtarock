@@ -46,13 +46,17 @@ pub enum Contract {
 }
 
 impl Contract {
+    // Returns true if the contract is klop.
     pub fn is_klop(&self) -> bool {
         match *self {
             Klop => true,
             _ => false,
         }
     }
-    pub fn value(&self) -> uint {
+
+    // Value of contract. If the contract is lost the value of contract is
+    // negative (-value).
+    pub fn value(&self) -> int {
         match *self {
             Klop => 70,
             Standard(Three) => 10,
@@ -66,6 +70,15 @@ impl Contract {
             Beggar(beggar::Open) => 90,
             Valat(valat::Color) => 125,
             Valat(valat::Normal) => 250,
+        }
+    }
+
+    // Returns true if the contract is one of the "normal" ones.
+    // Normal contracts are Three, Two, One, Solo Three, Solo Two and Solo One.
+    pub fn is_normal(&self) -> bool {
+        match *self {
+            Standard(Three) | Solo(Three) | SoloWithout => true,
+            _ => false,
         }
     }
 }
