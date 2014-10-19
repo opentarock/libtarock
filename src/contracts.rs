@@ -130,7 +130,7 @@ pub fn standard_move_validator(hand: &Hand, trick: &Trick, card: &Card) -> bool 
         true
     } else {
         match card.suit() {
-            Some(suit) => !hand.has_tarock(),
+            Some(_) => !hand.has_tarock(),
             None => suit.map(|suit| !hand.has_suit(suit)).unwrap_or(true),
         }
     }
@@ -160,7 +160,7 @@ pub fn negative_contract_move_validator(hand: &Hand, trick: &Trick, card: &Card)
                 .any(|card| card > max)
         } else {
             match card.suit() {
-                Some(suit) => !hand.has_tarock(),
+                Some(_) => !hand.has_tarock(),
                 _ if card.is_pagat() => contains_mond_and_skis(hand.cards()) || has_only_pagat(hand, card),
                 _ => suit.map(|suit| !hand.has_suit(suit)).unwrap_or(true) && !contains_mond_and_skis(trick.cards()),
             }

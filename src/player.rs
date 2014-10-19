@@ -54,7 +54,7 @@ impl PlayerTurn {
 
 #[cfg(test)]
 mod test {
-    use super::{PlayerId, PlayerTurn};
+    use super::PlayerTurn;
 
     #[test]
     fn current_player_is_returned() {

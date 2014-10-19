@@ -273,7 +273,7 @@ impl Hand {
 
     pub fn new(cards: &[Card]) -> Hand {
         Hand{
-            cards: Vec::from_slice(cards),
+            cards: cards.to_vec(),
         }
     }
 
@@ -300,8 +300,7 @@ pub struct CardDeal {
 }
 
 pub fn deal_four_player_standard(cards: &[Card]) -> CardDeal {
-    static NUM_PLAYERS: uint = 4;
-    static CARDS_PER_PLAYER: uint = 12;
+    const NUM_PLAYERS: uint = 4;
 
     let mut six_card_packets = cards.chunks(6);
     let talon = six_card_packets.next().unwrap();
@@ -316,7 +315,7 @@ pub fn deal_four_player_standard(cards: &[Card]) -> CardDeal {
     }
 
     CardDeal {
-        talon: Vec::from_slice(talon),
+        talon: talon.to_vec(),
         hands: hands
     }
 }
@@ -352,7 +351,7 @@ impl<S> Deck<S> {
 impl Deck<Unshuffled> {
     pub fn new() -> Deck<Unshuffled> {
         Deck{
-            cards: Vec::from_slice(CARDS),
+            cards: CARDS.to_vec(),
         }
     }
 }
@@ -573,10 +572,10 @@ mod test {
     fn each_player_gets_twelve_cards_with_four_player_standard_deal_strategy() {
         let mut rng = task_rng();
         let dealt_cards = Deck::new().shuffle(&mut rng).deal(deal_four_player_standard);
-        assert_eq!(dealt_cards.hands.get(0).size(), 12);
-        assert_eq!(dealt_cards.hands.get(1).size(), 12);
-        assert_eq!(dealt_cards.hands.get(2).size(), 12);
-        assert_eq!(dealt_cards.hands.get(3).size(), 12);
+        assert_eq!(dealt_cards.hands[0].size(), 12);
+        assert_eq!(dealt_cards.hands[1].size(), 12);
+        assert_eq!(dealt_cards.hands[2].size(), 12);
+        assert_eq!(dealt_cards.hands[3].size(), 12);
     }
 
     #[quickcheck]
