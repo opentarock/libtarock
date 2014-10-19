@@ -15,3 +15,4 @@ pub mod player;
 pub mod contracts;
 
 pub mod bidding;
+pub mod bonuses;
