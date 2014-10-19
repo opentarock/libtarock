@@ -1,5 +1,6 @@
 use cards::{CardSuit, Trick, Hand, Card, TarockCard, Tarock1, Tarock21, TarockSkis};
 
+#[deriving(Eq, PartialEq, Show)]
 pub enum ContractType {
     Three,
     Two,
@@ -7,18 +8,34 @@ pub enum ContractType {
 }
 
 pub mod beggar {
+    #[deriving(Eq, PartialEq, Show)]
     pub enum Type {
         Normal,
         Open,
     }
 }
 pub mod valat {
+    #[deriving(Eq, PartialEq, Show)]
     pub enum Type {
         Normal,
         Color,
     }
 }
 
+pub const KLOP: Contract = Klop;
+pub const STANDARD_THREE: Contract = Standard(Three);
+pub const STANDARD_TWO: Contract = Standard(Two);
+pub const STANDARD_ONE: Contract = Standard(One);
+pub const SOLO_THREE: Contract = Solo(Three);
+pub const SOLO_TWO: Contract = Solo(Two);
+pub const SOLO_ONE: Contract = Solo(One);
+pub const BEGGAR_NORMAL: Contract = Beggar(beggar::Normal);
+pub const SOLO_WITHOUT: Contract = SoloWithout;
+pub const BEGGAR_OPEN: Contract = Beggar(beggar::Open);
+pub const VALAT_COLOR: Contract = Valat(valat::Color);
+pub const VALAT_NORMAL: Contract = Valat(valat::Normal);
+
+#[deriving(Eq, PartialEq, Show)]
 pub enum Contract {
     Klop,
     Standard(ContractType),
@@ -26,6 +43,37 @@ pub enum Contract {
     Beggar(beggar::Type),
     SoloWithout,
     Valat(valat::Type),
+}
+
+impl Contract {
+    pub fn is_klop(&self) -> bool {
+        match *self {
+            Klop => true,
+            _ => false,
+        }
+    }
+    pub fn value(&self) -> uint {
+        match *self {
+            Klop => 70,
+            Standard(Three) => 10,
+            Standard(Two) => 20,
+            Standard(One) => 30,
+            Solo(Three) => 40,
+            Solo(Two) => 50,
+            Solo(One) => 60,
+            Beggar(beggar::Normal) => 70,
+            SoloWithout => 80,
+            Beggar(beggar::Open) => 90,
+            Valat(valat::Color) => 125,
+            Valat(valat::Normal) => 250,
+        }
+    }
+}
+
+impl PartialOrd for Contract {
+    fn partial_cmp(&self, other: &Contract) -> Option<Ordering> {
+        return self.value().partial_cmp(&other.value())
+    }
 }
 
 pub fn color_valat_winner_strategy(cards: &[Card]) -> uint {
@@ -64,6 +112,9 @@ fn contains_trula(cards: &[Card]) -> bool {
             TarockCard(Tarock21) => mond = true,
             TarockCard(TarockSkis) => skis = true,
             _ => {}
+        }
+        if pagat && mond && skis {
+            break
         }
     }
     pagat && mond && skis

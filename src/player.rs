@@ -1,65 +1,103 @@
-#[deriving(Eq, PartialEq, Show)]
-pub struct Player;
+pub type PlayerId = u64;
 
-impl Player {
-    pub fn new() -> Player {
-        Player
+pub struct PlayerTurn {
+    current_index: uint,
+    num_players: uint,
+    started_with: PlayerId,
+    players: Vec<PlayerId>,
+}
+
+impl PlayerTurn {
+    pub fn new(num_players: uint) -> PlayerTurn {
+        PlayerTurn::start_with(num_players, 0)
     }
-}
 
-struct PlayerTurn<'a> {
-    current_player: uint,
-    players: &'a [Player],
-}
-
-impl<'a> PlayerTurn<'a> {
-    fn new(players: &'a [Player]) -> PlayerTurn<'a> {
+    pub fn start_with(num_players: uint, first: PlayerId) -> PlayerTurn {
         PlayerTurn {
-            current_player: 0,
-            players: players,
+            current_index: first as uint,
+            num_players: num_players,
+            started_with: first,
+            players: Vec::from_fn(num_players, |i| i as PlayerId),
         }
     }
 
-    fn next(&mut self) -> &Player {
-        self.current_player = (self.current_player + 1) % self.players.len();
+    pub fn started_with(&self) -> &PlayerId {
+        &self.started_with
+    }
+
+    pub fn num_players(&self) -> uint {
+        self.num_players as uint
+    }
+
+    pub fn current_players(&self) -> uint {
+        self.players.len()
+    }
+
+    pub fn remove(&mut self) -> &PlayerId {
+        if self.current_players() > 1 {
+            self.players.remove(self.current_index).unwrap();
+            self.current_index %= self.current_players();
+        }
         self.current()
     }
 
-    fn current(&self) -> &Player {
-        &self.players[self.current_player]
+    pub fn next(&mut self) -> &PlayerId {
+        let next_index = (self.current_index + 1) % self.current_players();
+        self.current_index = next_index;
+        self.current()
+    }
+
+    pub fn current(&self) -> &PlayerId {
+        &self.players[self.current_index]
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{Player, PlayerTurn};
-
-    fn make_players(n: uint) -> Vec<Player> {
-        Vec::from_fn(n, |_| Player::new())
-    }
+    use super::{PlayerId, PlayerTurn};
 
     #[test]
     fn current_player_is_returned() {
-        let players = make_players(2);
-        let order = PlayerTurn::new(players.as_slice());
-        assert_eq!(players[0], *order.current());
-        assert_eq!(players[0], *order.current());
+        let order = PlayerTurn::new(2);
+        assert_eq!(0, *order.current());
+        assert_eq!(0, *order.current());
+    }
+
+    #[test]
+    fn starts_at_chosen_player() {
+        let order = PlayerTurn::start_with(3, 2);
+        assert_eq!(2, *order.current());
     }
 
     #[test]
     fn next_player_is_returned() {
-        let players = make_players(3);
-        let mut order = PlayerTurn::new(players.as_slice());
-        assert_eq!(players[1], *order.next());
-        assert_eq!(players[1], *order.current());
+        let mut order = PlayerTurn::new(3);
+        assert_eq!(1, *order.next());
+        assert_eq!(1, *order.current());
     }
 
     #[test]
     fn next_player_wraps_around() {
-        let players = make_players(3);
-        let mut order = PlayerTurn::new(players.as_slice());
-        assert_eq!(players[1], *order.next());
-        assert_eq!(players[2], *order.next());
-        assert_eq!(players[0], *order.next());
+        let mut order = PlayerTurn::new(3);
+        assert_eq!(1, *order.next());
+        assert_eq!(2, *order.next());
+        assert_eq!(0, *order.next());
+    }
+
+    #[test]
+    fn removes_current_player() {
+        let mut order = PlayerTurn::new(3);
+        order.next();
+        assert_eq!(2, *order.remove());
+        assert_eq!(0, *order.remove());
+        assert_eq!(1, order.current_players())
+    }
+
+    #[test]
+    fn does_not_remove_the_last_player() {
+        let mut order = PlayerTurn::new(2);
+        assert_eq!(1, *order.remove());
+        assert_eq!(1, *order.remove());
+        assert_eq!(1, order.current_players())
     }
 }
