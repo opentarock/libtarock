@@ -1,11 +1,15 @@
 use cards::{Hand, Card};
 
+use bonuses::BonusType;
+
 pub type PlayerId = u64;
 
 // A tarock game player with dealt cards.
+#[deriving(Clone)]
 pub struct Player {
     id: PlayerId,
     hand: Hand,
+    bids: Vec<BonusType>,
 }
 
 impl Player {
@@ -14,6 +18,7 @@ impl Player {
         Player {
             id: id,
             hand: hand,
+            bids: Vec::new(),
         }
     }
 
@@ -35,6 +40,11 @@ impl Player {
     // Returns a reference to the current cards in hand of the player.
     pub fn cards(&self) -> &[Card] {
         self.hand.cards()
+    }
+
+    // Returns current bids of the player.
+    pub fn bids(&self) -> &[BonusType] {
+        self.bids.as_slice()
     }
 }
 

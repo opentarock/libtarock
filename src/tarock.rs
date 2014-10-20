@@ -16,3 +16,4 @@ pub mod contracts;
 
 pub mod bidding;
 pub mod bonuses;
+pub mod announcements;

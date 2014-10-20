@@ -290,6 +290,10 @@ impl Hand {
         self.cards.iter().any(|card| card.suit() == Some(suit))
     }
 
+    pub fn has_card(&self, card: Card) -> bool {
+        self.cards.iter().any(|&c| c == card)
+    }
+
     pub fn cards(&self) -> &[Card] {
         self.cards.as_slice()
     }

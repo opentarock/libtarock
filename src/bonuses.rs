@@ -12,6 +12,7 @@ pub static BONUS_TYPES: [BonusType, ..5] = [
 ];
 
 // Type of point bonus.
+#[deriving(Clone, Show)]
 pub enum BonusType {
     Trula,
     Kings,
@@ -34,6 +35,7 @@ impl BonusType {
 }
 
 // Bonunes are additional ways to earn points.
+#[deriving(Clone, Show)]
 pub enum Bonus {
     Unannounced(BonusType),
     Announced(BonusType),
