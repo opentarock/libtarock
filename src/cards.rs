@@ -262,6 +262,7 @@ pub static CARDS: [Card, ..54] = [
     CARD_TAROCK_SKIS,
 ];
 
+#[deriving(Show, Eq, PartialEq, Clone)]
 pub struct Hand {
     cards: Vec<Card>,
 }

@@ -1,4 +1,42 @@
+use cards::{Hand, Card};
+
 pub type PlayerId = u64;
+
+// A tarock game player with dealt cards.
+pub struct Player {
+    id: PlayerId,
+    hand: Hand,
+}
+
+impl Player {
+    // Constructs a new player with an id and dealt hand.
+    pub fn new(id: PlayerId, hand: Hand) -> Player {
+        Player {
+            id: id,
+            hand: hand,
+        }
+    }
+
+    // Returns player's id.
+    pub fn id(&self) -> PlayerId {
+        self.id
+    }
+
+    // Returns a reference to the current hand of the player.
+    pub fn hand(&self) -> &Hand {
+        &self.hand
+    }
+
+    // Returns a mutable reference to the current hand of the player.
+    pub fn hand_mut(&mut self) -> &mut Hand {
+        &mut self.hand
+    }
+
+    // Returns a reference to the current cards in hand of the player.
+    pub fn cards(&self) -> &[Card] {
+        self.hand.cards()
+    }
+}
 
 pub struct PlayerTurn {
     current_index: uint,
