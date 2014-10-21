@@ -1,6 +1,8 @@
-use bonuses::{BonusType, Trula, Kings, KingUltimo, PagatUltimo, Valat};
-use cards::{CardSuit, King, SuitCard, CARD_TAROCK_PAGAT};
+use bonuses::{BonusType, valid_bonuses};
+use cards::CardSuit;
 use player::{PlayerTurn, Player, PlayerId};
+
+use std::collections::HashSet;
 
 // Next player to announce the bonuses or last if the player is the last announcer.
 #[deriving(Show, Eq, PartialEq)]
@@ -52,7 +54,7 @@ impl Announcements {
     }
 
     // Announce bonuses for the player.
-    pub fn announce(&mut self, player: &Player, bonuses: &[BonusType]) -> Result<Succ, AnnounceError> {
+    pub fn announce(&mut self, player: &Player, bonuses: &HashSet<BonusType>) -> Result<Succ, AnnounceError> {
         if self.is_done() {
             Err(Done)
         } else if *self.turn.current() != player.id() {
@@ -92,25 +94,9 @@ impl Announcements {
     }
 }
 
-//TODO: duplicate bonuses?
 // Check if the announced bonuses for the player are valid.
-fn check_bonuses_valid(player: &Player, bonuses: &[BonusType], king: Option<CardSuit>) -> bool {
-    bonuses.iter().all(|&bonus| is_bonus_valid(player, bonus, king))
-}
-
-// Check if the announced bonus for the player is valid.
-fn is_bonus_valid(player: &Player, bonus: BonusType, king: Option<CardSuit>) -> bool {
-    match bonus {
-        Trula | Kings | Valat => true,
-        KingUltimo => {
-            // Only valid if the player owns the called king.
-            king.map(|suit| player.hand().has_card(SuitCard(King, suit))).unwrap_or(false)
-        }
-        PagatUltimo => {
-            // Only valid if the player owns the pagat card.
-            player.hand().has_card(CARD_TAROCK_PAGAT)
-        }
-    }
+fn check_bonuses_valid(player: &Player, bonuses: &HashSet<BonusType>, king: Option<CardSuit>) -> bool {
+    bonuses.is_subset(&valid_bonuses(player, king))
 }
 
 #[cfg(test)]
@@ -121,6 +107,14 @@ mod test {
     use cards::*;
     use player::Player;
 
+    macro_rules! set(
+        ($($x:expr),*) => ({
+            use std::collections::HashSet;
+            let mut set = HashSet::new();
+            $(set.insert($x);)*
+            set
+        });
+    )
 
     fn players() -> Vec<Player> {
         vec![
@@ -151,17 +145,17 @@ mod test {
     fn player_can_announce() {
         let players = players();
         let mut ann = Announcements::new(&players[0]);
-        assert_eq!(ann.announce(&players[0], [Kings]), Ok(Next(1)));
+        assert_eq!(ann.announce(&players[0], &set![Kings]), Ok(Next(1)));
     }
 
     #[test]
     fn announcements_are_done_when_all_player_either_pass_or_announce() {
         let players = players();
         let mut ann = Announcements::new(&players[0]);
-        assert_eq!(ann.announce(&players[0], [Kings]), Ok(Next(1)));
+        assert_eq!(ann.announce(&players[0], &set![Kings]), Ok(Next(1)));
         assert_eq!(ann.pass(&players[1]), Ok(Next(2)));
         assert_eq!(ann.pass(&players[2]), Ok(Next(3)));
-        assert_eq!(ann.announce(&players[3], [Trula]), Ok(Last));
+        assert_eq!(ann.announce(&players[3], &set![Trula]), Ok(Last));
     }
 
     #[test]
@@ -183,7 +177,7 @@ mod test {
         assert_eq!(ann.pass(&players[2]), Ok(Next(3)));
         assert_eq!(ann.pass(&players[3]), Ok(Last));
         assert_eq!(ann.pass(&players[3]), Err(Done));
-        assert_eq!(ann.announce(&players[3], [Kings]), Err(Done));
+        assert_eq!(ann.announce(&players[3], &set![Kings]), Err(Done));
     }
 
     #[test]
@@ -191,7 +185,7 @@ mod test {
         let players = players();
         let mut ann = Announcements::new(&players[0]);
         assert_eq!(ann.pass(&players[1]), Err(NotPlayersTurn));
-        assert_eq!(ann.announce(&players[2], [Kings]), Err(NotPlayersTurn));
+        assert_eq!(ann.announce(&players[2], &set![Kings]), Err(NotPlayersTurn));
     }
 
     #[test]
@@ -199,9 +193,9 @@ mod test {
         let players = players();
         let mut ann = Announcements::with_king(&players[0], Clubs);
         assert_eq!(ann.pass(&players[0]), Ok(Next(1)));
-        assert_eq!(ann.announce(&players[1], [KingUltimo]), Err(InvalidBonus));
+        assert_eq!(ann.announce(&players[1], &set![KingUltimo]), Err(InvalidBonus));
         assert_eq!(ann.pass(&players[1]), Ok(Next(2)));
-        assert_eq!(ann.announce(&players[2], [KingUltimo]), Ok(Next(3)));
+        assert_eq!(ann.announce(&players[2], &set![KingUltimo]), Ok(Next(3)));
     }
 
     #[test]
@@ -209,9 +203,9 @@ mod test {
         let players = players();
         let mut ann = Announcements::new(&players[0]);
         assert_eq!(ann.pass(&players[0]), Ok(Next(1)));
-        assert_eq!(ann.announce(&players[1], [KingUltimo]), Err(InvalidBonus));
+        assert_eq!(ann.announce(&players[1], &set![KingUltimo]), Err(InvalidBonus));
         assert_eq!(ann.pass(&players[1]), Ok(Next(2)));
-        assert_eq!(ann.announce(&players[2], [KingUltimo]), Err(InvalidBonus));
+        assert_eq!(ann.announce(&players[2], &set![KingUltimo]), Err(InvalidBonus));
     }
 
     #[test]
@@ -219,8 +213,8 @@ mod test {
         let players = players();
         let mut ann = Announcements::new(&players[0]);
         assert_eq!(ann.pass(&players[0]), Ok(Next(1)));
-        assert_eq!(ann.announce(&players[1], [PagatUltimo]), Ok(Next(2)));
-        assert_eq!(ann.announce(&players[2], [PagatUltimo]), Err(InvalidBonus));
+        assert_eq!(ann.announce(&players[1], &set![PagatUltimo]), Ok(Next(2)));
+        assert_eq!(ann.announce(&players[2], &set![PagatUltimo]), Err(InvalidBonus));
     }
 
     #[test]
@@ -228,6 +222,6 @@ mod test {
         let players = players();
         let mut ann = Announcements::new(&players[0]);
         assert_eq!(ann.pass(&players[0]), Ok(Next(1)));
-        assert_eq!(ann.announce(&players[1], [PagatUltimo, Trula, Kings, Valat]), Ok(Next(2)));
+        assert_eq!(ann.announce(&players[1], &set![PagatUltimo, Trula, Kings, Valat]), Ok(Next(2)));
     }
 }

@@ -1,5 +1,8 @@
 use cards::{Card, TarockCard, Tarock1, Tarock21, TarockSkis, SuitCard,
-    Clubs, Spades, Hearts, Diamonds, King};
+    Clubs, Spades, Hearts, Diamonds, King, CardSuit, CARD_TAROCK_PAGAT};
+use player::Player;
+
+use std::collections::HashSet;
 
 use contracts::Contract;
 
@@ -12,7 +15,7 @@ pub static BONUS_TYPES: [BonusType, ..5] = [
 ];
 
 // Type of point bonus.
-#[deriving(Clone, Show)]
+#[deriving(Clone, Show, Eq, PartialEq, Hash)]
 pub enum BonusType {
     Trula,
     Kings,
@@ -105,11 +108,50 @@ pub fn has_kings(cards: &[Card]) -> bool {
     false
 }
 
+// Returns a set of valid bonuses for the player.
+pub fn valid_bonuses(player: &Player, king: Option<CardSuit>) -> HashSet<BonusType> {
+    let mut bonuses = HashSet::new();
+    // Always valid bonuses.
+    bonuses.insert(Trula);
+    bonuses.insert(Kings);
+    bonuses.insert(Valat);
+    if has_king(player, king) {
+        bonuses.insert(KingUltimo);
+    }
+    if has_pagat(player) {
+        bonuses.insert(PagatUltimo);
+    }
+    return bonuses
+}
+
+// Returns true if the player owns the king of specified suit.
+// If no king is given it always returns false.
+fn has_king(player: &Player, king: Option<CardSuit>) -> bool {
+   king.map(|suit| player.hand().has_card(SuitCard(King, suit))).unwrap_or(false)
+}
+
+// Returns true if the player owns the pagat card.
+fn has_pagat(player: &Player) -> bool {
+    player.hand().has_card(CARD_TAROCK_PAGAT)
+}
+
 #[cfg(test)]
 mod test {
-    use super::{BONUS_TYPES, Unannounced, Announced, has_trula, has_kings};
+    use super::{BONUS_TYPES, Unannounced, Announced, has_trula, has_kings,
+        valid_bonuses, Trula, Kings, Valat, KingUltimo, PagatUltimo};
 
     use cards::*;
+    use player::Player;
+
+    // TODO: move to util
+    macro_rules! set(
+        ($($x:expr),*) => ({
+            use std::collections::HashSet;
+            let mut set = HashSet::new();
+            $(set.insert($x);)*
+            set
+        });
+    )
 
     #[test]
     fn announced_bonuses_are_worth_two_times_more() {
@@ -136,5 +178,31 @@ mod test {
         assert!(!has_kings(cards.as_slice()));
         cards.push(CARD_DIAMONDS_KING);
         assert!(has_kings(cards.as_slice()));
+    }
+
+    #[test]
+    fn king_ultimo_valid_if_the_player_has_the_called_king() {
+        let mut cards = vec!(CARD_CLUBS_KING, CARD_TAROCK_10, CARD_CLUBS_SEVEN,
+                             CARD_HEARTS_NINE, CARD_DIAMONDS_NINE, CARD_CLUBS_EIGHT);
+        let hand = Hand::new(cards.as_slice());
+        let player = Player::new(0, hand);
+        assert_eq!(valid_bonuses(&player, Some(Hearts)), set![Trula, Kings, Valat]);
+        cards.push(CARD_HEARTS_KING);
+        let hand = Hand::new(cards.as_slice());
+        let player = Player::new(0, hand);
+        assert_eq!(valid_bonuses(&player, Some(Hearts)), set![Trula, Kings, Valat, KingUltimo]);
+    }
+
+    #[test]
+    fn pagat_ultimo_valid_only_if_the_player_has_the_pagat_card() {
+        let mut cards = vec!(CARD_CLUBS_KING, CARD_TAROCK_10, CARD_CLUBS_SEVEN,
+                             CARD_HEARTS_NINE, CARD_DIAMONDS_NINE, CARD_CLUBS_EIGHT);
+        let hand = Hand::new(cards.as_slice());
+        let player = Player::new(0, hand);
+        assert_eq!(valid_bonuses(&player, Some(Hearts)), set![Trula, Kings, Valat]);
+        cards.push(CARD_TAROCK_PAGAT);
+        let hand = Hand::new(cards.as_slice());
+        let player = Player::new(0, hand);
+        assert_eq!(valid_bonuses(&player, Some(Hearts)), set![Trula, Kings, Valat, PagatUltimo]);
     }
 }

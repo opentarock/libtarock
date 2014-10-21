@@ -2,6 +2,7 @@
 #![crate_type = "lib"]
 #![feature(phase)]
 #![feature(globs)]
+#![feature(macro_rules)]
 
 #[cfg(test)]
 #[phase(plugin)]
