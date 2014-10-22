@@ -11,6 +11,8 @@ extern crate quickcheck_macros;
 #[cfg(test)]
 extern crate quickcheck;
 
+mod util;
+
 pub mod cards;
 pub mod player;
 pub mod contracts;

@@ -143,16 +143,6 @@ mod test {
     use cards::*;
     use player::Player;
 
-    // TODO: move to util
-    macro_rules! set(
-        ($($x:expr),*) => ({
-            use std::collections::HashSet;
-            let mut set = HashSet::new();
-            $(set.insert($x);)*
-            set
-        });
-    )
-
     #[test]
     fn announced_bonuses_are_worth_two_times_more() {
         for bonus_type in BONUS_TYPES.iter() {
