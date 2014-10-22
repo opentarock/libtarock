@@ -1,4 +1,7 @@
-use cards::{CardSuit, Trick, Hand, Card, TarockCard, Tarock1, Tarock21, TarockSkis};
+use std::collections::HashSet;
+
+use cards::{CardSuit, Trick, Hand, Card, TarockCard,
+    Tarock1, Tarock21, TarockSkis};
 
 #[deriving(Eq, PartialEq, Show)]
 pub enum ContractType {
@@ -161,36 +164,36 @@ pub fn negative_contract_move_validator(hand: &Hand, trick: &Trick, card: &Card)
                 .max_by(|card| card)
                 .unwrap();
             if card.is_pagat() {
-                return contains_mond_and_skis(trick.cards()) || has_only_pagat(hand, card)
+                return contains_mond_and_skis(trick.cards().iter()) || has_only_pagat(hand, card)
             } else if card.is_tarock() &&
-                contains_mond_and_skis(trick.cards()) &&
-                hand.cards().iter().filter(|card| card.is_pagat()).count() == 1 {
+                contains_mond_and_skis(trick.cards().iter()) &&
+                hand.cards().filter(|card| card.is_pagat()).count() == 1 {
 
                 return false
             }
-            card > max || !hand.cards().iter()
+            card > max || !hand.cards()
                 .filter(|card| card.suit() == max.suit())
                 .any(|card| card > max)
         } else {
             match card.suit() {
                 Some(_) => !hand.has_tarock(),
                 _ if card.is_pagat() => contains_mond_and_skis(hand.cards()) || has_only_pagat(hand, card),
-                _ => suit.map(|suit| !hand.has_suit(suit)).unwrap_or(true) && !contains_mond_and_skis(trick.cards()),
+                _ => suit.map(|suit| !hand.has_suit(suit)).unwrap_or(true) && !contains_mond_and_skis(trick.cards().iter()),
             }
         }
     }
 }
 
 fn has_only_pagat(hand: &Hand, card: &Card) -> bool {
-    card.is_pagat() && hand.cards().iter().
+    card.is_pagat() && hand.cards().
         filter(|card| card.is_tarock()).
         count() == 1
 }
 
-fn contains_mond_and_skis(cards: &[Card]) -> bool {
+fn contains_mond_and_skis<'a, C: Iterator<&'a Card>>(mut cards: C) -> bool {
     let mut mond = false;
     let mut skis = false;
-    for card in cards.iter() {
+    for card in cards {
         match *card {
             TarockCard(Tarock21) => mond = true,
             TarockCard(TarockSkis) => skis = true,
@@ -207,8 +210,8 @@ impl MoveValidator for fn(hand: &Hand, trick: &Trick, card: &Card) -> bool {
 }
 
 
-pub fn valid_moves<V: MoveValidator>(validator: V, hand: &Hand, trick: &Trick) -> Vec<Card> {
-    hand.cards().iter().filter(|card| validator.is_valid(hand, trick, *card)).map(|c| *c).collect()
+pub fn valid_moves<V: MoveValidator>(validator: V, hand: &Hand, trick: &Trick) -> HashSet<Card> {
+    hand.cards().filter(|card| validator.is_valid(hand, trick, *card)).map(|c| *c).collect()
 }
 
 #[cfg(test)]
@@ -318,96 +321,96 @@ mod test {
 
     #[test]
     fn move_validator_all_moves_are_valid_on_first_play_in_trick() {
-        let cards = vec![CARD_TAROCK_2, CARD_SPADES_EIGHT, CARD_DIAMONDS_JACK];
+        let cards = set![CARD_TAROCK_2, CARD_SPADES_EIGHT, CARD_DIAMONDS_JACK];
         assert_eq!(valid_moves(standard_move_validator,
-                               &Hand::new(cards.as_slice()), &Trick::empty()), cards);
+                               &Hand::from_iter(cards.iter()), &Trick::empty()), cards);
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()), &Trick::empty()), cards);
+                               &Hand::from_iter(cards.iter()), &Trick::empty()), cards);
     }
 
     #[test]
     fn move_validator_card_of_same_suit_must_be_played() {
-        let cards = vec![CARD_TAROCK_2, CARD_SPADES_EIGHT, CARD_DIAMONDS_JACK];
+        let cards = set![CARD_TAROCK_2, CARD_SPADES_EIGHT, CARD_DIAMONDS_JACK];
         assert_eq!(valid_moves(standard_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_SPADES_KING])),
-                               vec![CARD_SPADES_EIGHT]);
+                               set![CARD_SPADES_EIGHT]);
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_SPADES_KING])),
-                               vec![CARD_SPADES_EIGHT]);
+                               set![CARD_SPADES_EIGHT]);
     }
 
     #[test]
     fn move_validator_tarock_must_be_played_if_no_cards_of_suit_in_hand() {
-        let cards = vec![CARD_TAROCK_2, CARD_HEARTS_KING, CARD_TAROCK_SKIS, CARD_SPADES_JACK];
+        let cards = set![CARD_TAROCK_2, CARD_HEARTS_KING, CARD_TAROCK_SKIS, CARD_SPADES_JACK];
         assert_eq!(valid_moves(standard_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_DIAMONDS_KING])),
-                               vec![CARD_TAROCK_2, CARD_TAROCK_SKIS]);
+                               set![CARD_TAROCK_2, CARD_TAROCK_SKIS]);
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_DIAMONDS_KING])),
-                               vec![CARD_TAROCK_2, CARD_TAROCK_SKIS]);
+                               set![CARD_TAROCK_2, CARD_TAROCK_SKIS]);
     }
 
     #[test]
     fn move_validator_other_suits_can_be_played_only_when_required_suit_or_tarocks_missing() {
-        let cards = vec![CARD_HEARTS_KING, CARD_DIAMONDS_JACK];
+        let cards = set![CARD_HEARTS_KING, CARD_DIAMONDS_JACK];
         assert_eq!(valid_moves(standard_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_CLUBS_NINE, CARD_CLUBS_KING])),
                                cards);
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_CLUBS_NINE, CARD_CLUBS_KING])),
                                cards);
     }
 
     #[test]
     fn negative_contract_validator_higher_card_of_suit_must_be_played() {
-        let cards = vec![CARD_TAROCK_13, CARD_SPADES_EIGHT, CARD_SPADES_QUEEN];
+        let cards = set![CARD_TAROCK_13, CARD_SPADES_EIGHT, CARD_SPADES_QUEEN];
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_SPADES_KNIGHT, CARD_SPADES_SEVEN])),
-                               vec![CARD_SPADES_QUEEN]);
+                               set![CARD_SPADES_QUEEN]);
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_SPADES_KING, CARD_SPADES_SEVEN])),
-                               vec![CARD_SPADES_EIGHT, CARD_SPADES_QUEEN]);
+                               set![CARD_SPADES_EIGHT, CARD_SPADES_QUEEN]);
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_SPADES_KING, CARD_SPADES_SEVEN, CARD_TAROCK_2])),
-                               vec![CARD_SPADES_EIGHT, CARD_SPADES_QUEEN]);
+                               set![CARD_SPADES_EIGHT, CARD_SPADES_QUEEN]);
     }
 
     #[test]
     fn negative_contract_pagat_can_only_be_played_as_last_tarock() {
-        let cards = vec![CARD_TAROCK_13, CARD_HEARTS_JACK, CARD_TAROCK_PAGAT, CARD_TAROCK_5];
+        let cards = set![CARD_TAROCK_13, CARD_HEARTS_JACK, CARD_TAROCK_PAGAT, CARD_TAROCK_5];
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_TAROCK_12, CARD_SPADES_SEVEN])),
-                               vec![CARD_TAROCK_13]);
+                               set![CARD_TAROCK_13]);
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_TAROCK_SKIS, CARD_SPADES_SEVEN])),
-                               vec![CARD_TAROCK_13, CARD_TAROCK_5]);
+                               set![CARD_TAROCK_13, CARD_TAROCK_5]);
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_SPADES_QUEEN])),
-                               vec![CARD_TAROCK_13, CARD_TAROCK_5]);
+                               set![CARD_TAROCK_13, CARD_TAROCK_5]);
     }
 
     #[test]
     fn negative_contract_pagat_as_not_last_tarock_must_be_played_if_trula_wins_trick() {
-        let cards = vec![CARD_TAROCK_13, CARD_HEARTS_JACK, CARD_TAROCK_PAGAT, CARD_TAROCK_5];
+        let cards = set![CARD_TAROCK_13, CARD_HEARTS_JACK, CARD_TAROCK_PAGAT, CARD_TAROCK_5];
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_TAROCK_12, CARD_TAROCK_SKIS, CARD_TAROCK_MOND])),
-                               vec![CARD_TAROCK_PAGAT]);
+                               set![CARD_TAROCK_PAGAT]);
         assert_eq!(valid_moves(negative_contract_move_validator,
-                               &Hand::new(cards.as_slice()),
+                               &Hand::from_iter(cards.iter()),
                                &make_trick([CARD_TAROCK_SKIS, CARD_DIAMONDS_JACK, CARD_TAROCK_MOND])),
-                               vec![CARD_TAROCK_PAGAT]);
+                               set![CARD_TAROCK_PAGAT]);
     }
 }

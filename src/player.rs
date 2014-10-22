@@ -1,4 +1,4 @@
-use cards::{Hand, Card};
+use cards::Hand;
 
 use bonuses::BonusType;
 
@@ -35,11 +35,6 @@ impl Player {
     // Returns a mutable reference to the current hand of the player.
     pub fn hand_mut(&mut self) -> &mut Hand {
         &mut self.hand
-    }
-
-    // Returns a reference to the current cards in hand of the player.
-    pub fn cards(&self) -> &[Card] {
-        self.hand.cards()
     }
 
     // Returns current bids of the player.

@@ -1,7 +1,10 @@
 use std::fmt;
 use std::fmt::{Formatter, Show};
+use std::hash::Hash;
 use std::iter::AdditiveIterator;
 
+use std::collections::HashSet;
+use std::collections::hashmap::SetItems;
 use std::rand::Rng;
 
 #[deriving(Clone, Show, Eq, PartialEq, Hash)]
@@ -262,19 +265,33 @@ pub static CARDS: [Card, ..54] = [
     CARD_TAROCK_SKIS,
 ];
 
+pub struct Cards<'a> {
+    iter: SetItems<'a, Card>,
+}
+
+impl<'a> Iterator<&'a Card> for Cards<'a> {
+    fn next(&mut self) -> Option<&'a Card> {
+        self.iter.next()
+    }
+}
+
 #[deriving(Show, Eq, PartialEq, Clone)]
 pub struct Hand {
-    cards: Vec<Card>,
+    cards: HashSet<Card>,
 }
 
 impl Hand {
     pub fn empty() -> Hand {
-        Hand{ cards: Vec::new() }
+        Hand{ cards: HashSet::new() }
     }
 
     pub fn new(cards: &[Card]) -> Hand {
+        Hand::from_iter(cards.iter())
+    }
+
+    pub fn from_iter<'a, C: Iterator<&'a Card>>(cards: C) -> Hand {
         Hand{
-            cards: cards.to_vec(),
+            cards: cards.map(|c| *c).collect(),
         }
     }
 
@@ -291,11 +308,13 @@ impl Hand {
     }
 
     pub fn has_card(&self, card: Card) -> bool {
-        self.cards.iter().any(|&c| c == card)
+        self.cards.contains(&card)
     }
 
-    pub fn cards(&self) -> &[Card] {
-        self.cards.as_slice()
+    pub fn cards<'a>(&'a self) -> Cards<'a> {
+        Cards {
+            iter: self.cards.iter(),
+        }
     }
 }
 
@@ -315,13 +334,19 @@ pub fn deal_four_player_standard(cards: &[Card]) -> CardDeal {
 
     let mut player_index = 0;
     for packet in six_card_packets {
-        hands.get_mut(player_index).cards.push_all(packet);
+        insert_all(&mut hands.get_mut(player_index).cards, packet);
         player_index = (player_index + 1) % NUM_PLAYERS;
     }
 
     CardDeal {
         talon: talon.to_vec(),
         hands: hands
+    }
+}
+
+fn insert_all<T: Eq + Hash + Clone>(set: &mut HashSet<T>, xs: &[T]) {
+    for x in xs.iter() {
+        set.insert(x.clone());
     }
 }
 
@@ -590,7 +615,8 @@ mod test {
         let mut card_set = HashSet::new();
         insert_all(&mut card_set, dealt_cards.talon.as_slice());
         for hand in dealt_cards.hands.iter() {
-            insert_all(&mut card_set, hand.cards.as_slice());
+            let cards = hand.cards().map(|c| *c).collect::<Vec<_>>();
+            insert_all(&mut card_set, cards.as_slice());
         }
         num_cards_in_deck == card_set.len()
     }
