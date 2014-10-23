@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use cards::{CardSuit, Trick, Hand, Card, TarockCard,
-    Tarock1, Tarock21, TarockSkis};
+use bonuses::has_trula;
+use cards::{CardSuit, Trick, Hand, Card, TarockCard, Tarock21, TarockSkis};
 
 #[deriving(Eq, PartialEq, Show)]
 pub enum ContractType {
@@ -108,7 +108,7 @@ fn find_winner(cards: &[Card], cond: |&Card, Option<CardSuit>| -> bool) ->uint {
         .max_by(|&(_, card)| card)
         .unwrap();
 
-    if card.is_tarock() && contains_trula(cards) {
+    if card.is_tarock() && has_trula(cards) {
         let (winner_index, _) = cards.iter()
             .enumerate()
             .find(|&(_, card)| card.is_pagat()).unwrap();
@@ -116,24 +116,6 @@ fn find_winner(cards: &[Card], cond: |&Card, Option<CardSuit>| -> bool) ->uint {
     }
 
     winner_index
-}
-
-fn contains_trula(cards: &[Card]) -> bool {
-    let mut pagat = false;
-    let mut mond = false;
-    let mut skis = false;
-    for card in cards.iter() {
-        match *card {
-            TarockCard(Tarock1) => pagat = true,
-            TarockCard(Tarock21) => mond = true,
-            TarockCard(TarockSkis) => skis = true,
-            _ => {}
-        }
-        if pagat && mond && skis {
-            break
-        }
-    }
-    pagat && mond && skis
 }
 
 pub trait MoveValidator {
