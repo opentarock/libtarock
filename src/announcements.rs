@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 // Next player to announce the bonuses or last if the player is the last announcer.
 #[deriving(Show, Eq, PartialEq)]
-pub enum Succ {
+pub enum Success {
     Last,
     Next(PlayerId),
 }
@@ -54,7 +54,7 @@ impl Announcements {
     }
 
     // Announce bonuses for the player.
-    pub fn announce(&mut self, player: &Player, bonuses: &HashSet<BonusType>) -> Result<Succ, AnnounceError> {
+    pub fn announce(&mut self, player: &Player, bonuses: &HashSet<BonusType>) -> Result<Success, AnnounceError> {
         if self.is_done() {
             Err(Done)
         } else if *self.turn.current() != player.id() {
@@ -67,7 +67,7 @@ impl Announcements {
     }
 
     // Pass announcing bonuses for the player.
-    pub fn pass(&mut self, player: &Player) -> Result<Succ, AnnounceError> {
+    pub fn pass(&mut self, player: &Player) -> Result<Success, AnnounceError> {
         if self.is_done() {
             Err(Done)
         } else if *self.turn.current() != player.id() {
@@ -78,7 +78,7 @@ impl Announcements {
     }
 
     // Move the announcing to the next player after successful player announcement.
-    fn next_player(&mut self) -> Succ {
+    fn next_player(&mut self) -> Success {
         if self.turn.current_players() > 1 {
             self.turn.remove();
             Next(*self.turn.current())

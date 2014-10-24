@@ -1,31 +1,19 @@
 use contracts::{Contract, STANDARD_THREE};
 use player::{PlayerId, PlayerTurn};
 
-pub mod bid {
-    use player::PlayerId;
-
-    #[deriving(Eq, PartialEq, Show)]
-    pub enum BidSuccess {
-        Next(PlayerId),
-        Last,
-    }
-
-    #[deriving(Eq, PartialEq, Show)]
-    pub enum BidError {
-        NotPlayersTurn,
-        ContractTooLow,
-        InvalidContract,
-        Done,
-    }
+#[deriving(Eq, PartialEq, Show)]
+pub enum Success {
+    Next(PlayerId),
+    Last,
 }
 
-pub mod pass {
-    #[deriving(Eq, PartialEq, Show)]
-    pub enum PassError {
-        NotPlayersTurn,
-        MustBid,
-        Done,
-    }
+#[deriving(Eq, PartialEq, Show)]
+pub enum BidError {
+    NotPlayersTurn,
+    ContractTooLow,
+    InvalidContract,
+    MustBid,
+    Done,
 }
 
 // The `Bidding` trait is used to specify the process of bidding for different
@@ -35,10 +23,10 @@ pub trait Bidding {
     fn current_player(&self) -> &PlayerId;
 
     // Bid a contract for a player.
-    fn bid(&mut self, player: &PlayerId, contract: Contract) -> Result<bid::BidSuccess, bid::BidError>;
+    fn bid(&mut self, player: &PlayerId, contract: Contract) -> Result<Success, BidError>;
 
     // Pass the bid for a player.
-    fn pass(&mut self, player: &PlayerId) -> Result<(), pass::PassError>;
+    fn pass(&mut self, player: &PlayerId) -> Result<Success, BidError>;
 
     // Return true if the bidding process is finished.
     fn is_done(&self) -> bool;
@@ -118,6 +106,16 @@ impl Bidder {
     fn has_no_bets(&self, player: &PlayerId) -> bool {
         &self.forehand == player && self.highest.contract() == DEFAULT_CONTRACT
     }
+
+    fn next_player(&mut self, f: |&mut PlayerTurn| -> PlayerId) -> Success {
+        if self.turn.current_players() == 1 {
+            // Now that the last remaining player bidding has bid we are done.
+            self.done = true;
+            Last
+        } else {
+            Next(f(&mut self.turn))
+        }
+    }
 }
 
 impl Bidding for Bidder {
@@ -125,43 +123,39 @@ impl Bidding for Bidder {
         self.turn.current()
     }
 
-    fn bid(&mut self, player: &PlayerId, contract: Contract) -> Result<bid::BidSuccess, bid::BidError> {
+    fn bid(&mut self, player: &PlayerId, contract: Contract) -> Result<Success, BidError> {
         let bid = Bid::new(*self.turn.current(), player_priority(&self.turn, player), contract);
         if self.is_done() {
-            Err(bid::Done)
+            Err(Done)
         } else if self.turn.current() != player {
-            Err(bid::NotPlayersTurn)
+            Err(NotPlayersTurn)
         } else if contract.is_klop() && !self.has_no_bets(player) {
             // Klop cannot be played by everyone except the forehand player when
             // no other bids are made.
-            Err(bid::InvalidContract)
+            Err(InvalidContract)
         } else if !is_bid_valid(&self.highest, &bid){
-            Err(bid::ContractTooLow)
+            Err(ContractTooLow)
         } else {
             self.highest = bid;
-            if self.turn.current_players() == 1 {
-                // Now that the last remaining player bidding has bid we are done.
-                self.done = true;
-                Ok(bid::Last)
-            } else {
-                Ok(bid::Next(*self.turn.next()))
-            }
+            Ok(self.next_player(|turn| *turn.next()))
         }
     }
 
-    fn pass(&mut self, player: &PlayerId) -> Result<(), pass::PassError> {
+    fn pass(&mut self, player: &PlayerId) -> Result<Success, BidError> {
         if self.is_done() {
-            Err(pass::Done)
+            Err(Done)
         } else if self.turn.current() != player {
-            Err(pass::NotPlayersTurn)
+            Err(NotPlayersTurn)
         } else if self.has_no_bets(player) || self.turn.current_players() == 1 {
             // Bidding is mandatory if there were no bids made or the last
             // player bidding did not bid yet.
-            Err(pass::MustBid)
+            Err(MustBid)
         } else {
-            // Player that passes the bid cannot rejoin the bidding again.
-            self.turn.remove();
-            Ok(())
+            Ok(self.next_player(|turn| {
+                // Player that passes the bid cannot rejoin the bidding again.
+                turn.remove();
+                *turn.current()
+            }))
         }
     }
 
@@ -193,7 +187,8 @@ fn is_bid_valid(highest: &Bid, wanted: &Bid) -> bool {
 
 #[cfg(test)]
 mod test {
-    use super::{bid, pass, Bidder, Bidding};
+    use super::{Bidder, Bidding, Next, Last, NotPlayersTurn,
+        MustBid, Done, InvalidContract, ContractTooLow};
 
     use super::DEFAULT_CONTRACT;
     use contracts::{KLOP, STANDARD_THREE, STANDARD_TWO, STANDARD_ONE,
@@ -219,8 +214,8 @@ mod test {
     #[test]
     fn player_cant_pass_if_its_not_his_turn() {
         let mut bidder = Bidder::new(0);
-        assert_eq!(bidder.pass(&1), Err(pass::NotPlayersTurn));
-        assert_eq!(bidder.pass(&3), Err(pass::NotPlayersTurn));
+        assert_eq!(bidder.pass(&1), Err(NotPlayersTurn));
+        assert_eq!(bidder.pass(&3), Err(NotPlayersTurn));
     }
 
     #[test]
@@ -229,7 +224,7 @@ mod test {
         assert!(bidder.pass(&2).is_ok())
         assert!(bidder.pass(&3).is_ok())
         assert!(bidder.pass(&0).is_ok())
-        assert_eq!(bidder.pass(&1), Err(pass::MustBid));
+        assert_eq!(bidder.pass(&1), Err(MustBid));
     }
 
     #[test]
@@ -238,21 +233,21 @@ mod test {
         assert!(bidder.pass(&2).is_ok())
         assert!(bidder.pass(&3).is_ok())
         assert!(bidder.pass(&0).is_ok())
-        assert_eq!(bidder.bid(&1, DEFAULT_CONTRACT), Ok(bid::Last));
-        assert_eq!(bidder.pass(&2), Err(pass::Done));
+        assert_eq!(bidder.bid(&1, DEFAULT_CONTRACT), Ok(Last));
+        assert_eq!(bidder.pass(&2), Err(Done));
     }
 
     #[test]
     fn player_can_bid() {
         let mut bidder = Bidder::new(0);
-        assert_eq!(bidder.bid(&2, STANDARD_TWO), Ok(bid::Next(3)))
+        assert_eq!(bidder.bid(&2, STANDARD_TWO), Ok(Next(3)))
     }
 
     #[test]
     fn play_is_not_allowed_to_bid_three_of_klop() {
         let mut bidder = Bidder::new(0);
-        assert_eq!(bidder.bid(&2, KLOP), Err(bid::InvalidContract))
-        assert_eq!(bidder.bid(&2, STANDARD_THREE), Err(bid::ContractTooLow))
+        assert_eq!(bidder.bid(&2, KLOP), Err(InvalidContract))
+        assert_eq!(bidder.bid(&2, STANDARD_THREE), Err(ContractTooLow))
     }
 
     #[test]
@@ -261,55 +256,55 @@ mod test {
         assert!(bidder.pass(&2).is_ok())
         assert!(bidder.pass(&3).is_ok())
         assert!(bidder.pass(&0).is_ok())
-        assert_eq!(bidder.bid(&1, KLOP), Ok(bid::Last));
+        assert_eq!(bidder.bid(&1, KLOP), Ok(Last));
     }
 
     #[test]
     fn player_must_bid_a_higher_bid_than_the_highest() {
         let mut bidder = Bidder::new(0);
-        assert_eq!(bidder.bid(&2, STANDARD_TWO), Ok(bid::Next(3)));
-        assert_eq!(bidder.bid(&3, STANDARD_TWO), Err(bid::ContractTooLow));
-        assert_eq!(bidder.bid(&3, STANDARD_ONE), Ok(bid::Next(0)));
+        assert_eq!(bidder.bid(&2, STANDARD_TWO), Ok(Next(3)));
+        assert_eq!(bidder.bid(&3, STANDARD_TWO), Err(ContractTooLow));
+        assert_eq!(bidder.bid(&3, STANDARD_ONE), Ok(Next(0)));
     }
 
     #[test]
     fn forehand_player_can_bid_contracts_of_equal_or_higher_value() {
         let mut bidder = Bidder::new(0);
-        assert_eq!(bidder.bid(&2, STANDARD_TWO), Ok(bid::Next(3)));
-        assert_eq!(bidder.pass(&3), Ok(()));
-        assert_eq!(bidder.pass(&0), Ok(()));
-        assert_eq!(bidder.bid(&1, STANDARD_TWO), Ok(bid::Next(2)));
+        assert_eq!(bidder.bid(&2, STANDARD_TWO), Ok(Next(3)));
+        assert_eq!(bidder.pass(&3), Ok(Next(0)));
+        assert_eq!(bidder.pass(&0), Ok(Next(1)));
+        assert_eq!(bidder.bid(&1, STANDARD_TWO), Ok(Next(2)));
     }
 
     #[test]
     fn bidding_continues_until_all_players_but_one_pass_the_bid() {
         let mut bidder = Bidder::new(0);
-        assert_eq!(bidder.bid(&2, STANDARD_TWO), Ok(bid::Next(3)));
-        assert_eq!(bidder.pass(&3), Ok(()));
-        assert_eq!(bidder.bid(&0, STANDARD_ONE), Ok(bid::Next(1)));
-        assert_eq!(bidder.bid(&1, SOLO_THREE), Ok(bid::Next(2)));
-        assert_eq!(bidder.pass(&2), Ok(()));
-        assert_eq!(bidder.bid(&0, SOLO_TWO), Ok(bid::Next(1)));
-        assert_eq!(bidder.pass(&1), Ok(()));
-        assert_eq!(bidder.bid(&0, SOLO_ONE), Ok(bid::Last));
+        assert_eq!(bidder.bid(&2, STANDARD_TWO), Ok(Next(3)));
+        assert_eq!(bidder.pass(&3), Ok(Next(0)));
+        assert_eq!(bidder.bid(&0, STANDARD_ONE), Ok(Next(1)));
+        assert_eq!(bidder.bid(&1, SOLO_THREE), Ok(Next(2)));
+        assert_eq!(bidder.pass(&2), Ok(Next(0)));
+        assert_eq!(bidder.bid(&0, SOLO_TWO), Ok(Next(1)));
+        assert_eq!(bidder.pass(&1), Ok(Next(0)));
+        assert_eq!(bidder.bid(&0, SOLO_ONE), Ok(Last));
     }
 
     #[test]
     fn bidding_starts_with_next_player_to_dealer() {
         let mut bidder = Bidder::new(3);
-        assert_eq!(bidder.bid(&1, STANDARD_TWO), Ok(bid::Next(2)));
+        assert_eq!(bidder.bid(&1, STANDARD_TWO), Ok(Next(2)));
     }
 
     #[test]
     fn winner_bids_last() {
         let mut bidder = Bidder::new(0);
-        assert_eq!(bidder.bid(&2, STANDARD_TWO), Ok(bid::Next(3)));
-        assert_eq!(bidder.pass(&3), Ok(()));
-        assert_eq!(bidder.pass(&0), Ok(()));
-        assert_eq!(bidder.bid(&1, STANDARD_TWO), Ok(bid::Next(2)));
-        assert_eq!(bidder.bid(&2, STANDARD_ONE), Ok(bid::Next(1)));
-        assert_eq!(bidder.pass(&1), Ok(()));
-        assert_eq!(bidder.pass(&2), Err(pass::MustBid));
-        assert_eq!(bidder.bid(&2, STANDARD_ONE), Ok(bid::Last));
+        assert_eq!(bidder.bid(&2, STANDARD_TWO), Ok(Next(3)));
+        assert_eq!(bidder.pass(&3), Ok(Next(0)));
+        assert_eq!(bidder.pass(&0), Ok(Next(1)))
+        assert_eq!(bidder.bid(&1, STANDARD_TWO), Ok(Next(2)));
+        assert_eq!(bidder.bid(&2, STANDARD_ONE), Ok(Next(1)));
+        assert_eq!(bidder.pass(&1), Ok(Next(2)));
+        assert_eq!(bidder.pass(&2), Err(MustBid));
+        assert_eq!(bidder.bid(&2, STANDARD_ONE), Ok(Last));
     }
 }
