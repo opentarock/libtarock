@@ -153,8 +153,7 @@ impl Bidding for Bidder {
         } else {
             Ok(self.next_player(|turn| {
                 // Player that passes the bid cannot rejoin the bidding again.
-                turn.remove();
-                *turn.current()
+                *turn.remove()
             }))
         }
     }

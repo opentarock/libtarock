@@ -127,12 +127,12 @@ pub fn valid_bonuses(player: &Player, king: Option<CardSuit>) -> HashSet<BonusTy
 // Returns true if the player owns the king of specified suit.
 // If no king is given it always returns false.
 fn has_king(player: &Player, king: Option<CardSuit>) -> bool {
-   king.map(|suit| player.hand().has_card(SuitCard(King, suit))).unwrap_or(false)
+   king.map(|suit| player.hand().has_card(&SuitCard(King, suit))).unwrap_or(false)
 }
 
 // Returns true if the player owns the pagat card.
 fn has_pagat(player: &Player) -> bool {
-    player.hand().has_card(CARD_TAROCK_PAGAT)
+    player.hand().has_card(&CARD_TAROCK_PAGAT)
 }
 
 #[cfg(test)]
@@ -142,6 +142,7 @@ mod test {
 
     use cards::*;
     use player::Player;
+    use util::*;
 
     #[test]
     fn announced_bonuses_are_worth_two_times_more() {

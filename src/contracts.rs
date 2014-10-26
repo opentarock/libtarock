@@ -123,20 +123,30 @@ pub trait MoveValidator {
 }
 
 pub fn standard_move_validator(hand: &Hand, trick: &Trick, card: &Card) -> bool {
-    let suit = trick.first().and_then(|c| c.suit());
-    if trick.is_empty() || suit == card.suit() {
+    let trick_suit = trick.first().and_then(|c| c.suit());
+    if !hand.has_card(card) {
+        false
+    } else if trick_suit.map(|suit| hand.has_suit(&suit)).unwrap_or(false) && card.suit() != trick_suit {
+        false
+    } else if trick.is_empty() || trick_suit == card.suit() {
         true
     } else {
         match card.suit() {
-            Some(_) => !hand.has_tarock(),
-            None => suit.map(|suit| !hand.has_suit(suit)).unwrap_or(true),
+            Some(_) => !hand.has_tarock() && has_suite_cards(hand, trick_suit),
+            None => trick_suit.map(|suit| !hand.has_suit(&suit)).unwrap_or(true),
         }
     }
 }
 
+fn has_suite_cards(hand: &Hand, suit: Option<CardSuit>) -> bool {
+    suit.map(|suit| !hand.has_suit(&suit)).unwrap_or(true)
+}
+
 // TODO: refactor
 pub fn negative_contract_move_validator(hand: &Hand, trick: &Trick, card: &Card) -> bool {
-    if trick.is_empty() {
+    if !hand.has_card(card) {
+        false
+    } else if trick.is_empty() {
         true
     } else {
         let suit = trick.first().and_then(|c| c.suit());
@@ -160,7 +170,7 @@ pub fn negative_contract_move_validator(hand: &Hand, trick: &Trick, card: &Card)
             match card.suit() {
                 Some(_) => !hand.has_tarock(),
                 _ if card.is_pagat() => contains_mond_and_skis(hand.cards()) || has_only_pagat(hand, card),
-                _ => suit.map(|suit| !hand.has_suit(suit)).unwrap_or(true) && !contains_mond_and_skis(trick.cards().iter()),
+                _ => suit.map(|suit| !hand.has_suit(&suit)).unwrap_or(true) && !contains_mond_and_skis(trick.cards().iter()),
             }
         }
     }
@@ -395,4 +405,31 @@ mod test {
                                &make_trick([CARD_TAROCK_SKIS, CARD_DIAMONDS_JACK, CARD_TAROCK_MOND])),
                                set![CARD_TAROCK_PAGAT]);
     }
+
+    #[test]
+    fn validator_card_that_is_not_in_hand_cannot_be_played() {
+        let cards = set![CARD_HEARTS_KING, CARD_DIAMONDS_JACK];
+        assert_eq!(standard_move_validator(
+                &Hand::from_iter(cards.iter()),
+                &make_trick([CARD_CLUBS_NINE, CARD_CLUBS_KING]),
+                &CARD_CLUBS_TEN), false);
+        assert_eq!(negative_contract_move_validator(
+                &Hand::from_iter(cards.iter()),
+                &make_trick([CARD_CLUBS_NINE, CARD_CLUBS_KING]),
+                &CARD_CLUBS_TEN), false);
+    }
+
+    #[test]
+    fn validator_cards_of_different_suits_cannot_be_played_if_has_required_suit() {
+        let cards = set![CARD_HEARTS_NINE];
+        assert_eq!(standard_move_validator(
+                &Hand::from_iter(cards.iter()),
+                &make_trick([CARD_HEARTS_SEVEN]),
+                &CARD_CLUBS_EIGHT), false);
+        assert_eq!(negative_contract_move_validator(
+                &Hand::from_iter(cards.iter()),
+                &make_trick([CARD_HEARTS_SEVEN]),
+                &CARD_CLUBS_EIGHT), false);
+    }
+
 }

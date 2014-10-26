@@ -295,20 +295,28 @@ impl Hand {
         }
     }
 
+    pub fn remove_card(&mut self, card: &Card) {
+        self.cards.remove(card);
+    }
+
     pub fn size(&self) -> uint {
         self.cards.len()
+    }
+
+    pub fn is_empty(&self) -> bool  {
+        self.cards.is_empty()
     }
 
     pub fn has_tarock(&self) -> bool {
         self.cards.iter().any(|card| card.is_tarock())
     }
 
-    pub fn has_suit(&self, suit: CardSuit) -> bool {
-        self.cards.iter().any(|card| card.suit() == Some(suit))
+    pub fn has_suit(&self, suit: &CardSuit) -> bool {
+        self.cards.iter().any(|card| card.suit() == Some(*suit))
     }
 
-    pub fn has_card(&self, card: Card) -> bool {
-        self.cards.contains(&card)
+    pub fn has_card(&self, card: &Card) -> bool {
+        self.cards.contains(card)
     }
 
     pub fn cards<'a>(&'a self) -> Cards<'a> {
@@ -393,7 +401,7 @@ impl Deck<Shuffled> {
 }
 
 pub struct TrickWinner {
-    pub player_index: uint,
+    pub card_index: uint,
     pub card: Card,
 }
 
@@ -441,21 +449,22 @@ impl Trick {
     }
 
     pub fn winner(&self, f: |&[Card]| -> uint) -> TrickWinner {
-        let player_index = f(self.cards.as_slice());
+        let card_index = f(self.cards.as_slice());
         TrickWinner {
-            player_index: player_index,
-            card: self.cards[player_index],
+            card_index: card_index,
+            card: self.cards[card_index],
         }
     }
 }
 
+#[deriving(Clone)]
 pub struct Pile {
     cards: Vec<Card>,
 }
 
 impl Pile {
     pub fn new() -> Pile {
-        Pile {cards: Vec::new()}
+        Pile { cards: Vec::new() }
     }
 
     fn add_card(&mut self, card: Card) {

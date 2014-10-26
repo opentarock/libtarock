@@ -1,6 +1,5 @@
-use cards::Hand;
-
 use bonuses::BonusType;
+use cards::{Hand, Pile};
 
 pub type PlayerId = u64;
 
@@ -10,6 +9,7 @@ pub struct Player {
     id: PlayerId,
     hand: Hand,
     bids: Vec<BonusType>,
+    pile: Pile,
 }
 
 impl Player {
@@ -19,6 +19,7 @@ impl Player {
             id: id,
             hand: hand,
             bids: Vec::new(),
+            pile: Pile::new(),
         }
     }
 
@@ -40,6 +41,14 @@ impl Player {
     // Returns current bids of the player.
     pub fn bids(&self) -> &[BonusType] {
         self.bids.as_slice()
+    }
+
+    pub fn pile(&self) -> &Pile {
+        &self.pile
+    }
+
+    pub fn pile_mut(&mut self) -> &mut Pile {
+        &mut self.pile
     }
 }
 
