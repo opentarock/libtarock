@@ -7,6 +7,8 @@ use std::collections::HashSet;
 use std::collections::hashmap::SetItems;
 use std::rand::Rng;
 
+use contracts::ContractType;
+
 #[deriving(Clone, Show, Eq, PartialEq, Hash)]
 pub enum CardSuit {
     Clubs,
@@ -326,8 +328,28 @@ impl Hand {
     }
 }
 
+pub struct Talon {
+    cards: Vec<Card>,
+}
+
+impl Talon {
+    fn new(cards: Vec<Card>) -> Talon {
+        Talon {
+            cards: cards,
+        }
+    }
+
+    fn cards(&self) -> &[Card] {
+        self.cards.as_slice()
+    }
+
+    fn size(&self) -> uint {
+        self.cards.len()
+    }
+}
+
 pub struct CardDeal {
-    talon: Vec<Card>,
+    talon: Talon,
     hands: Vec<Hand>,
 }
 
@@ -347,7 +369,7 @@ pub fn deal_four_player_standard(cards: &[Card]) -> CardDeal {
     }
 
     CardDeal {
-        talon: talon.to_vec(),
+        talon: Talon::new(talon.to_vec()),
         hands: hands
     }
 }
@@ -622,7 +644,7 @@ mod test {
         let num_cards_in_deck = Deck::new().cards.len();
         let dealt_cards = deck.deal(deal_four_player_standard);
         let mut card_set = HashSet::new();
-        insert_all(&mut card_set, dealt_cards.talon.as_slice());
+        insert_all(&mut card_set, dealt_cards.talon.cards());
         for hand in dealt_cards.hands.iter() {
             let cards = hand.cards().map(|c| *c).collect::<Vec<_>>();
             insert_all(&mut card_set, cards.as_slice());
@@ -634,7 +656,7 @@ mod test {
     fn all_cards_are_dealt_with_four_player_standard_deal_strategy(deck: Deck<Shuffled>) -> bool {
         let num_cards_in_deck = Deck::new().cards.len();
         let dealt_cards = deck.deal(deal_four_player_standard);
-        let num_cards = dealt_cards.talon.len() +
+        let num_cards = dealt_cards.talon.size() +
             dealt_cards.hands.iter().map(|h| h.size()).sum();
         num_cards_in_deck == num_cards
     }
