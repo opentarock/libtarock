@@ -80,7 +80,7 @@ impl Contract {
     // Normal contracts are Three, Two, One, Solo Three, Solo Two and Solo One.
     pub fn is_normal(&self) -> bool {
         match *self {
-            Standard(Three) | Solo(Three) | SoloWithout => true,
+            Standard(_) | Solo(_) | SoloWithout => true,
             _ => false,
         }
     }

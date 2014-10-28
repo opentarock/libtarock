@@ -1,5 +1,8 @@
+use std::collections::HashSet;
+
 use bonuses::BonusType;
-use cards::{Hand, Pile};
+use cards::{Hand, Pile, CardDeal, Talon};
+use contracts::Contract;
 
 pub type PlayerId = u64;
 
@@ -10,6 +13,7 @@ pub struct Player {
     hand: Hand,
     bids: Vec<BonusType>,
     pile: Pile,
+    partner: Option<PlayerId>,
 }
 
 impl Player {
@@ -20,6 +24,7 @@ impl Player {
             hand: hand,
             bids: Vec::new(),
             pile: Pile::new(),
+            partner: None,
         }
     }
 
@@ -49,6 +54,77 @@ impl Player {
 
     pub fn pile_mut(&mut self) -> &mut Pile {
         &mut self.pile
+    }
+
+    pub fn partner(&self) -> Option<PlayerId> {
+        self.partner
+    }
+
+    pub fn set_partner(&mut self, partner: &Player) {
+        self.partner = Some(partner.id());
+    }
+}
+
+pub struct Players {
+    players: Vec<Player>,
+    dealer: uint,
+}
+
+impl Players {
+    pub fn new(n: uint) -> Players {
+        let players = range(0, n as u64)
+            .map(|player_id| Player::new(player_id, Hand::empty()))
+            .collect();
+        Players {
+            players: players,
+            dealer: 0,
+        }
+    }
+
+    pub fn deal(&mut self, deal: CardDeal) -> Talon {
+        assert!(deal.hands.len() == self.players.len());
+        for (player, hand) in self.players.iter_mut().zip(deal.hands.into_iter()) {
+            player.hand = hand;
+        }
+        deal.talon
+    }
+
+    pub fn dealer(&self) -> &Player {
+        &self.players[self.dealer]
+    }
+
+    pub fn play_contract<'a>(&'a self, declarer: PlayerId, contract: Contract) -> ContractPlayers<'a> {
+        ContractPlayers {
+            declarer: declarer as uint,
+            players: self,
+        }
+    }
+}
+
+pub struct ContractPlayers<'a> {
+    declarer: uint,
+    players: &'a Players,
+}
+
+impl<'a> ContractPlayers<'a> {
+    pub fn declarer(&self) -> &Player {
+        self.player(self.declarer as PlayerId)
+    }
+
+    pub fn scoring_players(&self) -> Vec<&Player> {
+        let declarer = self.declarer();
+        let mut scoring = vec![declarer];
+        match declarer.partner() {
+            Some(partner_id) => {
+                scoring.push(self.player(partner_id));
+            },
+            None => {}
+        }
+        scoring
+    }
+
+    fn player(&self, player_id: PlayerId) -> &Player {
+        &self.players.players[player_id as uint]
     }
 }
 

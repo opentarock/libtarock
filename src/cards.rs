@@ -349,8 +349,8 @@ impl Talon {
 }
 
 pub struct CardDeal {
-    talon: Talon,
-    hands: Vec<Hand>,
+    pub talon: Talon,
+    pub hands: Vec<Hand>,
 }
 
 pub fn deal_four_player_standard(cards: &[Card]) -> CardDeal {
