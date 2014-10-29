@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use cards::{Pile, MAX_POINTS, HALF_POINTS};
+use cards::{Pile, HALF_POINTS};
+use contracts::{Klop};
 use player::{PlayerId, ContractPlayers};
 
 pub type PlayerScores = HashMap<PlayerId, int>;
@@ -14,25 +15,30 @@ pub fn score(players: &mut ContractPlayers) -> PlayerScores {
 }
 
 fn score_normal(players: &mut ContractPlayers) -> PlayerScores {
+    let contract = players.contract();
     let mut pile = Pile::new();
     let scoring = players.scoring_players();
-    let mut players = Vec::with_capacity(2);
+    let mut p = Vec::with_capacity(2);
     // Add card piles of all scoring players to one pile.
     for player in scoring.into_iter() {
-        players.push(player.id());
+        p.push(player.id());
         pile.add_pile(player.take_pile());
     }
     // Score all the cards from the scoring players together.
     let score = pile.score();
     // Every scoring player gets the same amount of points.
-    players.iter().map(|&player_id| {
-        let score = if score > HALF_POINTS {
-            score
-        } else {
-            -score
-        };
-        (player_id, score)
+    p.iter().map(|&player_id| {
+        let score = score_sign(score) * (score + contract.value());
+        (player_id, round_score(score))
     }).collect()
+}
+
+fn score_sign(score: int) -> int {
+    if score > HALF_POINTS {
+        1
+    } else {
+        -1
+    }
 }
 
 fn score_klop(players: &mut ContractPlayers) -> PlayerScores {
@@ -47,21 +53,25 @@ fn score_klop(players: &mut ContractPlayers) -> PlayerScores {
         .find(|score| is_winner_loser(*score))
         .is_some();
     if !winner_loser {
-        scores
+        scores.iter().map(|(&player_id, &score)| (player_id, round_score(score))).collect()
     } else {
         // Set the max and -max scores for winner and loser respectively.
         scores.iter()
             .filter(|&(_, &score)| is_winner_loser(score))
             .map(|(&player_id, &score)| {
                 let score = if is_winner(score) {
-                    MAX_POINTS
+                    Klop.value()
                 } else {
-                    -MAX_POINTS
+                    -Klop.value()
                 };
                 (player_id, score)
             })
             .collect()
     }
+}
+
+fn round_score(score: int) -> int {
+    (score as f64 / 5.0).round() as int * 5
 }
 
 fn is_winner_loser(score: int) -> bool {
@@ -79,7 +89,7 @@ fn is_loser(score: int) -> bool {
 #[cfg(test)]
 mod test {
     use cards::*;
-    use contracts::{SoloWithout, Klop, Standard, Two};
+    use contracts::{SoloWithout, Klop, Standard, Three, Two};
     use player::{Players, PlayerId};
 
     use super::*;
@@ -114,7 +124,7 @@ mod test {
         let mut cp = players.play_contract(2, SoloWithout);
         let scores = score(&mut cp);
         assert_eq!(scores.len(), 1);
-        assert_eq!(scores[2], -12);
+        assert_eq!(scores[2], -90);
     }
 
     #[test]
@@ -125,7 +135,7 @@ mod test {
         let mut cp = players.play_contract(3, Standard(Two));
         let scores = score(&mut cp);
         assert_eq!(scores.len(), 2);
-        assert_eq!(scores[3], -16);
+        assert_eq!(scores[3], -35);
         assert_eq!(scores[3], scores[2]);
     }
 
@@ -135,10 +145,10 @@ mod test {
         players.player_mut(3).set_partner(2);
         init_cards(&mut players);
         init_half_points(&mut players, 2);
-        let mut cp = players.play_contract(3, Standard(Two));
+        let mut cp = players.play_contract(3, Standard(Three));
         let scores = score(&mut cp);
         assert_eq!(scores.len(), 2);
-        assert_eq!(scores[3], 49);
+        assert_eq!(scores[3], 60);
         assert_eq!(scores[3], scores[2]);
     }
 
@@ -149,10 +159,10 @@ mod test {
         let mut cp = players.play_contract(2, Klop);
         let scores = score(&mut cp);
         assert_eq!(scores.len(), 4);
-        assert_eq!(scores[0], -4);
-        assert_eq!(scores[1], -6);
-        assert_eq!(scores[2], -12);
-        assert_eq!(scores[3], -4);
+        assert_eq!(scores[0], -5);
+        assert_eq!(scores[1], -5);
+        assert_eq!(scores[2], -10);
+        assert_eq!(scores[3], -5);
     }
 
     #[test]
