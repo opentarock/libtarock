@@ -56,12 +56,17 @@ impl Player {
         &mut self.pile
     }
 
+    pub fn take_pile(&mut self) -> Pile {
+        use std::mem;
+        mem::replace(&mut self.pile, Pile::new())
+    }
+
     pub fn partner(&self) -> Option<PlayerId> {
         self.partner
     }
 
-    pub fn set_partner(&mut self, partner: &Player) {
-        self.partner = Some(partner.id());
+    pub fn set_partner(&mut self, id: PlayerId) {
+        self.partner = Some(id);
     }
 }
 
@@ -93,17 +98,25 @@ impl Players {
         &self.players[self.dealer]
     }
 
-    pub fn play_contract<'a>(&'a self, declarer: PlayerId, contract: Contract) -> ContractPlayers<'a> {
+    pub fn play_contract<'a>(&'a mut self, declarer: PlayerId, contract: Contract) -> ContractPlayers<'a> {
         ContractPlayers {
             declarer: declarer as uint,
             players: self,
         }
     }
+
+    pub fn player(&self, id: PlayerId) -> &Player {
+        &self.players[id as uint]
+    }
+
+    pub fn player_mut(&mut self, id: PlayerId) -> &mut Player {
+        &mut self.players[id as uint]
+    }
 }
 
 pub struct ContractPlayers<'a> {
     declarer: uint,
-    players: &'a Players,
+    players: &'a mut Players,
 }
 
 impl<'a> ContractPlayers<'a> {
@@ -111,20 +124,38 @@ impl<'a> ContractPlayers<'a> {
         self.player(self.declarer as PlayerId)
     }
 
-    pub fn scoring_players(&self) -> Vec<&Player> {
-        let declarer = self.declarer();
-        let mut scoring = vec![declarer];
-        match declarer.partner() {
-            Some(partner_id) => {
-                scoring.push(self.player(partner_id));
-            },
-            None => {}
+    pub fn scoring_players<'a>(&'a mut self) -> Vec<&'a mut Player> {
+        let declarer_id = self.declarer as PlayerId;
+        let mut scoring = vec![];
+        let (partner_id, found) = match self.player(declarer_id).partner() {
+            Some(partner_id) => (partner_id, true),
+            None => (0, false),
+        };
+        // Split the players somewhere between declarer and partner with each
+        // being in thei own split part.
+        let split_index = ((declarer_id + partner_id) as f64 / 2.0).abs().ceil() as uint;
+        // Split the players so we can get two mutable references to the elements.
+        let (p1, p2) = self.players.players.as_mut_slice().split_at_mut(split_index);
+        if partner_id > declarer_id {
+            scoring.push(&mut p1[declarer_id as uint]);
+            if found {
+                scoring.push(&mut p2[partner_id as uint - split_index]);
+            }
+        } else {
+            scoring.push(&mut p2[declarer_id as uint - split_index]);
+            if found {
+                scoring.push(&mut p1[partner_id as uint]);
+            }
         }
         scoring
     }
 
     fn player(&self, player_id: PlayerId) -> &Player {
         &self.players.players[player_id as uint]
+    }
+
+    fn player_mut(&mut self, player_id: PlayerId) -> &mut Player {
+        &mut self.players.players[player_id as uint]
     }
 }
 
@@ -182,7 +213,37 @@ impl PlayerTurn {
 
 #[cfg(test)]
 mod test {
-    use super::PlayerTurn;
+    use contracts::{SoloWithout, Standard, Two};
+    use super::*;
+
+    #[test]
+    fn scoring_player_is_returned() {
+        let mut players = Players::new(4);
+        for declarer in range(0u64, 4) {
+            let mut cp = players.play_contract(declarer, SoloWithout);
+            let scoring = cp.scoring_players();
+            assert_eq!(scoring.len(), 1);
+            assert_eq!(scoring[0].id(), declarer);
+        }
+    }
+
+    #[test]
+    fn both_scoring_players_are_returned_with_partner() {
+        let mut players = Players::new(4);
+        for declarer in range(0u64, 4) {
+            for partner in range(0u64, 4) {
+                if declarer == partner {
+                    continue
+                }
+                players.player_mut(declarer).set_partner(partner);
+                let mut cp = players.play_contract(declarer, Standard(Two));
+                let scoring = cp.scoring_players();
+                assert_eq!(scoring.len(), 2);
+                assert_eq!(scoring[0].id(), declarer);
+                assert_eq!(scoring[1].id(), partner);
+            }
+        }
+    }
 
     #[test]
     fn current_player_is_returned() {

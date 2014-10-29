@@ -499,6 +499,12 @@ impl Pile {
         }
     }
 
+    pub fn add_pile(&mut self, pile: Pile) {
+        for card in pile.cards.into_iter() {
+            self.add_card(card);
+        }
+    }
+
     pub fn score(&self) -> uint {
         let mut total = 0;
         for group in self.cards.as_slice().chunks(3) {
