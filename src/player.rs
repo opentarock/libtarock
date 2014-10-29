@@ -102,6 +102,7 @@ impl Players {
         ContractPlayers {
             declarer: declarer as uint,
             players: self,
+            contract: contract,
         }
     }
 
@@ -117,6 +118,7 @@ impl Players {
 pub struct ContractPlayers<'a> {
     declarer: uint,
     players: &'a mut Players,
+    contract: Contract,
 }
 
 impl<'a> ContractPlayers<'a> {
@@ -125,6 +127,14 @@ impl<'a> ContractPlayers<'a> {
     }
 
     pub fn scoring_players<'a>(&'a mut self) -> Vec<&'a mut Player> {
+        if self.contract.is_klop() {
+            self.players.players.iter_mut().collect()
+        } else {
+            self.scoring_players_normal()
+        }
+    }
+
+    fn scoring_players_normal(&mut self) -> Vec<&mut Player> {
         let declarer_id = self.declarer as PlayerId;
         let mut scoring = vec![];
         let (partner_id, found) = match self.player(declarer_id).partner() {
@@ -132,7 +142,7 @@ impl<'a> ContractPlayers<'a> {
             None => (0, false),
         };
         // Split the players somewhere between declarer and partner with each
-        // being in thei own split part.
+        // being in their own split part.
         let split_index = ((declarer_id + partner_id) as f64 / 2.0).abs().ceil() as uint;
         // Split the players so we can get two mutable references to the elements.
         let (p1, p2) = self.players.players.as_mut_slice().split_at_mut(split_index);
@@ -148,6 +158,10 @@ impl<'a> ContractPlayers<'a> {
             }
         }
         scoring
+    }
+
+    pub fn contract(&self) -> Contract {
+        self.contract
     }
 
     fn player(&self, player_id: PlayerId) -> &Player {

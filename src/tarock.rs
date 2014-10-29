@@ -21,3 +21,4 @@ pub mod bidding;
 pub mod bonuses;
 pub mod announcements;
 pub mod game;
+pub mod scoring;
