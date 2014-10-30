@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use bonuses::BonusType;
 use cards::{Hand, Pile, CardDeal, Talon};
 use contracts::Contract;
@@ -126,37 +124,21 @@ impl<'a> ContractPlayers<'a> {
         self.player(self.declarer as PlayerId)
     }
 
-    pub fn scoring_players<'a>(&'a mut self) -> Vec<&'a mut Player> {
+    pub fn scoring_players(&self) -> Vec<&Player> {
         if self.contract.is_klop() {
-            self.players.players.iter_mut().collect()
+            self.players.players.iter().collect()
         } else {
             self.scoring_players_normal()
         }
     }
 
-    fn scoring_players_normal(&mut self) -> Vec<&mut Player> {
+    fn scoring_players_normal(&self) -> Vec<&Player> {
         let declarer_id = self.declarer as PlayerId;
-        let mut scoring = vec![];
-        let (partner_id, found) = match self.player(declarer_id).partner() {
-            Some(partner_id) => (partner_id, true),
-            None => (0, false),
+        let mut scoring = vec![self.player(declarer_id)];
+        match self.player(declarer_id).partner() {
+            Some(partner_id) => { scoring.push(self.player(partner_id)) }
+            None => {},
         };
-        // Split the players somewhere between declarer and partner with each
-        // being in their own split part.
-        let split_index = ((declarer_id + partner_id) as f64 / 2.0).abs().ceil() as uint;
-        // Split the players so we can get two mutable references to the elements.
-        let (p1, p2) = self.players.players.as_mut_slice().split_at_mut(split_index);
-        if partner_id > declarer_id {
-            scoring.push(&mut p1[declarer_id as uint]);
-            if found {
-                scoring.push(&mut p2[partner_id as uint - split_index]);
-            }
-        } else {
-            scoring.push(&mut p2[declarer_id as uint - split_index]);
-            if found {
-                scoring.push(&mut p1[partner_id as uint]);
-            }
-        }
         scoring
     }
 

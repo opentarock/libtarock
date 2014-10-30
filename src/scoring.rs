@@ -6,7 +6,7 @@ use player::{PlayerId, ContractPlayers};
 
 pub type PlayerScores = HashMap<PlayerId, int>;
 
-pub fn score(players: &mut ContractPlayers) -> PlayerScores {
+pub fn score(players: &ContractPlayers) -> PlayerScores {
     if players.contract().is_klop() {
         score_klop(players)
     } else if players.contract().is_beggar() {
@@ -18,7 +18,7 @@ pub fn score(players: &mut ContractPlayers) -> PlayerScores {
     }
 }
 
-fn score_normal(players: &mut ContractPlayers) -> PlayerScores {
+fn score_normal(players: &ContractPlayers) -> PlayerScores {
     let contract = players.contract();
     let mut pile = Pile::new();
     let scoring = players.scoring_players();
@@ -26,7 +26,7 @@ fn score_normal(players: &mut ContractPlayers) -> PlayerScores {
     // Add card piles of all scoring players to one pile.
     for player in scoring.into_iter() {
         p.push(player.id());
-        pile.add_pile(player.take_pile());
+        pile.add_pile(player.pile());
     }
     // Score all the cards from the scoring players together.
     let score = pile.score();
@@ -37,12 +37,12 @@ fn score_normal(players: &mut ContractPlayers) -> PlayerScores {
     }).collect()
 }
 
-fn score_klop(players: &mut ContractPlayers) -> PlayerScores {
+fn score_klop(players: &ContractPlayers) -> PlayerScores {
     let mut scores = HashMap::new();
     let scoring = players.scoring_players();
     // Cards are scored fore every player individually.
     for player in scoring.into_iter() {
-        scores.insert(player.id(), -player.take_pile().score());
+        scores.insert(player.id(), -player.pile().score());
     }
     let winner_loser = scores.iter()
         .map(|(_, &score)| score)
@@ -66,7 +66,7 @@ fn score_klop(players: &mut ContractPlayers) -> PlayerScores {
     }
 }
 
-fn score_beggar(players: &mut ContractPlayers) -> PlayerScores {
+fn score_beggar(players: &ContractPlayers) -> PlayerScores {
     let contract = players.contract();
     let mut scores = HashMap::new();
     let scoring = players.scoring_players();
@@ -76,7 +76,7 @@ fn score_beggar(players: &mut ContractPlayers) -> PlayerScores {
     scores
 }
 
-fn score_valat(players: &mut ContractPlayers) -> PlayerScores {
+fn score_valat(players: &ContractPlayers) -> PlayerScores {
     let contract = players.contract();
     let mut scores = HashMap::new();
     let scoring = players.scoring_players();
@@ -146,8 +146,8 @@ mod test {
     fn score_for_declarer_is_calculated() {
         let mut players = Players::new(4);
         init_cards(&mut players);
-        let mut cp = players.play_contract(2, SoloWithout);
-        let scores = score(&mut cp);
+        let cp = players.play_contract(2, SoloWithout);
+        let scores = score(&cp);
         assert_eq!(scores.len(), 1);
         assert_eq!(scores[2], -90);
     }
@@ -157,8 +157,8 @@ mod test {
         let mut players = Players::new(4);
         players.player_mut(3).set_partner(2);
         init_cards(&mut players);
-        let mut cp = players.play_contract(3, Standard(Two));
-        let scores = score(&mut cp);
+        let cp = players.play_contract(3, Standard(Two));
+        let scores = score(&cp);
         assert_eq!(scores.len(), 2);
         assert_eq!(scores[3], -35);
         assert_eq!(scores[3], scores[2]);
@@ -170,8 +170,8 @@ mod test {
         players.player_mut(3).set_partner(2);
         init_cards(&mut players);
         init_half_points(&mut players, 2);
-        let mut cp = players.play_contract(3, Standard(Three));
-        let scores = score(&mut cp);
+        let cp = players.play_contract(3, Standard(Three));
+        let scores = score(&cp);
         assert_eq!(scores.len(), 2);
         assert_eq!(scores[3], 60);
         assert_eq!(scores[3], scores[2]);
@@ -181,8 +181,8 @@ mod test {
     fn every_player_is_scored_independently_in_klop() {
         let mut players = Players::new(4);
         init_cards(&mut players);
-        let mut cp = players.play_contract(2, Klop);
-        let scores = score(&mut cp);
+        let cp = players.play_contract(2, Klop);
+        let scores = score(&cp);
         assert_eq!(scores.len(), 4);
         assert_eq!(scores[0], -5);
         assert_eq!(scores[1], -5);
@@ -195,8 +195,8 @@ mod test {
         let mut players = Players::new(4);
         init_cards(&mut players);
         init_no_cards(&mut players, 0);
-        let mut cp = players.play_contract(2, Klop);
-        let scores = score(&mut cp);
+        let cp = players.play_contract(2, Klop);
+        let scores = score(&cp);
         assert_eq!(scores.len(), 1);
         assert_eq!(scores[0], 70);
     }
@@ -206,8 +206,8 @@ mod test {
         let mut players = Players::new(4);
         init_cards(&mut players);
         init_half_points(&mut players, 1);
-        let mut cp = players.play_contract(2, Klop);
-        let scores = score(&mut cp);
+        let cp = players.play_contract(2, Klop);
+        let scores = score(&cp);
         assert_eq!(scores.len(), 1);
         assert_eq!(scores[1], -70);
     }
@@ -218,8 +218,8 @@ mod test {
         init_cards(&mut players);
         init_no_cards(&mut players, 2);
         init_half_points(&mut players, 3);
-        let mut cp = players.play_contract(0, Klop);
-        let scores = score(&mut cp);
+        let cp = players.play_contract(0, Klop);
+        let scores = score(&cp);
         assert_eq!(scores.len(), 2);
         assert_eq!(scores[2], 70);
         assert_eq!(scores[3], -70);
@@ -230,8 +230,8 @@ mod test {
         let mut players = Players::new(4);
         init_cards(&mut players);
         init_no_cards(&mut players, 2);
-        let mut cp = players.play_contract(2, Beggar(beggar::Normal));
-        let scores = score(&mut cp);
+        let cp = players.play_contract(2, Beggar(beggar::Normal));
+        let scores = score(&cp);
         assert_eq!(scores.len(), 1);
         assert_eq!(scores[2], 70);
     }
@@ -240,8 +240,8 @@ mod test {
     fn beggar_is_lost_if_declarer_wins_no_tricks() {
         let mut players = Players::new(4);
         init_cards(&mut players);
-        let mut cp = players.play_contract(2, Beggar(beggar::Open));
-        let scores = score(&mut cp);
+        let cp = players.play_contract(2, Beggar(beggar::Open));
+        let scores = score(&cp);
         assert_eq!(scores.len(), 1);
         assert_eq!(scores[2], -90);
     }
@@ -252,8 +252,8 @@ mod test {
         for card in CARDS[0 .. 48].iter() {
             players.player_mut(1).pile_mut().add_card(*card);
         }
-        let mut cp = players.play_contract(1, Valat(valat::Normal));
-        let scores = score(&mut cp);
+        let cp = players.play_contract(1, Valat(valat::Normal));
+        let scores = score(&cp);
         assert_eq!(scores.len(), 1);
         assert_eq!(scores[1], 250);
     }
@@ -264,8 +264,8 @@ mod test {
         for card in CARDS[0 .. 47].iter() {
             players.player_mut(3).pile_mut().add_card(*card);
         }
-        let mut cp = players.play_contract(3, Valat(valat::Color));
-        let scores = score(&mut cp);
+        let cp = players.play_contract(3, Valat(valat::Color));
+        let scores = score(&cp);
         assert_eq!(scores.len(), 1);
         assert_eq!(scores[3], -125);
     }

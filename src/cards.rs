@@ -7,8 +7,6 @@ use std::collections::HashSet;
 use std::collections::hashmap::SetItems;
 use std::rand::Rng;
 
-use contracts::ContractType;
-
 #[deriving(Clone, Show, Eq, PartialEq, Hash)]
 pub enum CardSuit {
     Clubs,
@@ -507,9 +505,9 @@ impl Pile {
         }
     }
 
-    pub fn add_pile(&mut self, pile: Pile) {
-        for card in pile.cards.into_iter() {
-            self.add_card(card);
+    pub fn add_pile(&mut self, pile: &Pile) {
+        for card in pile.cards.iter() {
+            self.add_card(*card);
         }
     }
 
