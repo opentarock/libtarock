@@ -4,8 +4,12 @@ use cards::{Pile, HALF_POINTS, NUM_CARDS, TALON_SIZE};
 use contracts::{Klop};
 use player::{PlayerId, ContractPlayers};
 
+// A map of scores for individual players.
+// Only players that have the score != 0 are included.
 pub type PlayerScores = HashMap<PlayerId, int>;
 
+// Calculate the scores for the players depending on the contract played.
+// At least one player will always score.
 pub fn score(players: &ContractPlayers) -> PlayerScores {
     if players.contract().is_klop() {
         score_klop(players)
@@ -18,6 +22,7 @@ pub fn score(players: &ContractPlayers) -> PlayerScores {
     }
 }
 
+// Calculate the scores for normal contracts.
 fn score_normal(players: &ContractPlayers) -> PlayerScores {
     let contract = players.contract();
     let mut pile = Pile::new();
@@ -37,6 +42,7 @@ fn score_normal(players: &ContractPlayers) -> PlayerScores {
     }).collect()
 }
 
+// Calculate the scores for Klop contract.
 fn score_klop(players: &ContractPlayers) -> PlayerScores {
     let mut scores = HashMap::new();
     let scoring = players.scoring_players();
@@ -66,6 +72,22 @@ fn score_klop(players: &ContractPlayers) -> PlayerScores {
     }
 }
 
+// Returns true if a player is a winner or a loser in Klop contract.
+fn is_winner_loser(score: int) -> bool {
+    is_winner(score) || is_loser(score)
+}
+
+// Returns true if a player is a winner in Klop contract.
+fn is_winner(score: int) -> bool {
+    score == 0
+}
+
+// Returns true is a player is a loser in Klop contract.
+fn is_loser(score: int) -> bool {
+    score < -HALF_POINTS
+}
+
+// Calculate the scores for Beggar and Open Beggar contracts.
 fn score_beggar(players: &ContractPlayers) -> PlayerScores {
     let contract = players.contract();
     let mut scores = HashMap::new();
@@ -76,6 +98,7 @@ fn score_beggar(players: &ContractPlayers) -> PlayerScores {
     scores
 }
 
+// Calculate the scores for Valat and Color Valat contracts.
 fn score_valat(players: &ContractPlayers) -> PlayerScores {
     let contract = players.contract();
     let mut scores = HashMap::new();
@@ -86,6 +109,7 @@ fn score_valat(players: &ContractPlayers) -> PlayerScores {
     scores
 }
 
+// Returns +1 if the condition succeeds and -1 otherwise.
 fn score_sign(cond: || -> bool) -> int {
     if cond() {
         1
@@ -95,20 +119,9 @@ fn score_sign(cond: || -> bool) -> int {
 }
 
 
+// Round the score to the nearest score divisible by 5.
 fn round_score(score: int) -> int {
     (score as f64 / 5.0).round() as int * 5
-}
-
-fn is_winner_loser(score: int) -> bool {
-    is_winner(score) || is_loser(score)
-}
-
-fn is_winner(score: int) -> bool {
-    score == 0
-}
-
-fn is_loser(score: int) -> bool {
-    score < -HALF_POINTS
 }
 
 #[cfg(test)]
