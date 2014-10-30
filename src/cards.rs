@@ -509,6 +509,14 @@ impl Pile {
         }
     }
 
+    pub fn size(&self) -> uint {
+        self.cards.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.size() == 0
+    }
+
     pub fn score(&self) -> int {
         let mut total = 0i;
         for group in self.cards.as_slice().chunks(3) {

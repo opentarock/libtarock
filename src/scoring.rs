@@ -9,6 +9,8 @@ pub type PlayerScores = HashMap<PlayerId, int>;
 pub fn score(players: &mut ContractPlayers) -> PlayerScores {
     if players.contract().is_klop() {
         score_klop(players)
+    } else if players.contract().is_beggar() {
+        score_beggar(players)
     } else {
         score_normal(players)
     }
@@ -28,13 +30,13 @@ fn score_normal(players: &mut ContractPlayers) -> PlayerScores {
     let score = pile.score();
     // Every scoring player gets the same amount of points.
     p.iter().map(|&player_id| {
-        let score = score_sign(score) * (score + contract.value());
+        let score = score_sign(|| score > HALF_POINTS) * (score + contract.value());
         (player_id, round_score(score))
     }).collect()
 }
 
-fn score_sign(score: int) -> int {
-    if score > HALF_POINTS {
+fn score_sign(cond: || -> bool) -> int {
+    if cond() {
         1
     } else {
         -1
@@ -70,6 +72,16 @@ fn score_klop(players: &mut ContractPlayers) -> PlayerScores {
     }
 }
 
+fn score_beggar(players: &mut ContractPlayers) -> PlayerScores {
+    let contract = players.contract();
+    let mut scores = HashMap::new();
+    let scoring = players.scoring_players();
+    assert!(scoring.len() == 1);
+    let score = score_sign(|| scoring[0].pile().is_empty()) * contract.value();
+    scores.insert(scoring[0].id(), score);
+    scores
+}
+
 fn round_score(score: int) -> int {
     (score as f64 / 5.0).round() as int * 5
 }
@@ -89,7 +101,7 @@ fn is_loser(score: int) -> bool {
 #[cfg(test)]
 mod test {
     use cards::*;
-    use contracts::{SoloWithout, Klop, Standard, Three, Two};
+    use contracts::{SoloWithout, Klop, Standard, Three, Two, Beggar, beggar};
     use player::{Players, PlayerId};
 
     use super::*;
@@ -105,7 +117,7 @@ mod test {
         players.player_mut(3).pile_mut().add_card(CARD_DIAMONDS_KING);
     }
 
-    fn init_winner(players: &mut Players, player: PlayerId) {
+    fn init_no_cards(players: &mut Players, player: PlayerId) {
         *players.player_mut(player).pile_mut() = Pile::new();
     }
 
@@ -169,7 +181,7 @@ mod test {
     fn klop_only_winner_scores() {
         let mut players = Players::new(4);
         init_cards(&mut players);
-        init_winner(&mut players, 0);
+        init_no_cards(&mut players, 0);
         let mut cp = players.play_contract(2, Klop);
         let scores = score(&mut cp);
         assert_eq!(scores.len(), 1);
@@ -191,12 +203,33 @@ mod test {
     fn both_winner_and_loser_score() {
         let mut players = Players::new(4);
         init_cards(&mut players);
-        init_winner(&mut players, 2);
+        init_no_cards(&mut players, 2);
         init_half_points(&mut players, 3);
         let mut cp = players.play_contract(0, Klop);
         let scores = score(&mut cp);
         assert_eq!(scores.len(), 2);
         assert_eq!(scores[2], 70);
         assert_eq!(scores[3], -70);
+    }
+
+    #[test]
+    fn beggar_is_won_is_declarer_wins_no_tricks() {
+        let mut players = Players::new(4);
+        init_cards(&mut players);
+        init_no_cards(&mut players, 2);
+        let mut cp = players.play_contract(2, Beggar(beggar::Normal));
+        let scores = score(&mut cp);
+        assert_eq!(scores.len(), 1);
+        assert_eq!(scores[2], 70);
+    }
+
+    #[test]
+    fn beggar_is_lost_is_declarer_wins_no_tricks() {
+        let mut players = Players::new(4);
+        init_cards(&mut players);
+        let mut cp = players.play_contract(2, Beggar(beggar::Open));
+        let scores = score(&mut cp);
+        assert_eq!(scores.len(), 1);
+        assert_eq!(scores[2], -90);
     }
 }
