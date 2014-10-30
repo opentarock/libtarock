@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cards::{Pile, HALF_POINTS};
+use cards::{Pile, HALF_POINTS, NUM_CARDS, TALON_SIZE};
 use contracts::{Klop};
 use player::{PlayerId, ContractPlayers};
 
@@ -11,6 +11,8 @@ pub fn score(players: &mut ContractPlayers) -> PlayerScores {
         score_klop(players)
     } else if players.contract().is_beggar() {
         score_beggar(players)
+    } else if players.contract().is_valat() {
+        score_valat(players)
     } else {
         score_normal(players)
     }
@@ -33,14 +35,6 @@ fn score_normal(players: &mut ContractPlayers) -> PlayerScores {
         let score = score_sign(|| score > HALF_POINTS) * (score + contract.value());
         (player_id, round_score(score))
     }).collect()
-}
-
-fn score_sign(cond: || -> bool) -> int {
-    if cond() {
-        1
-    } else {
-        -1
-    }
 }
 
 fn score_klop(players: &mut ContractPlayers) -> PlayerScores {
@@ -82,6 +76,25 @@ fn score_beggar(players: &mut ContractPlayers) -> PlayerScores {
     scores
 }
 
+fn score_valat(players: &mut ContractPlayers) -> PlayerScores {
+    let contract = players.contract();
+    let mut scores = HashMap::new();
+    let scoring = players.scoring_players();
+    assert!(scoring.len() == 1);
+    let score = score_sign(|| scoring[0].pile().size() >= NUM_CARDS - TALON_SIZE) * contract.value();
+    scores.insert(scoring[0].id(), score);
+    scores
+}
+
+fn score_sign(cond: || -> bool) -> int {
+    if cond() {
+        1
+    } else {
+        -1
+    }
+}
+
+
 fn round_score(score: int) -> int {
     (score as f64 / 5.0).round() as int * 5
 }
@@ -101,7 +114,7 @@ fn is_loser(score: int) -> bool {
 #[cfg(test)]
 mod test {
     use cards::*;
-    use contracts::{SoloWithout, Klop, Standard, Three, Two, Beggar, beggar};
+    use contracts::{SoloWithout, Klop, Standard, Three, Two, Beggar, beggar, Valat, valat};
     use player::{Players, PlayerId};
 
     use super::*;
@@ -213,7 +226,7 @@ mod test {
     }
 
     #[test]
-    fn beggar_is_won_is_declarer_wins_no_tricks() {
+    fn beggar_is_won_if_declarer_wins_no_tricks() {
         let mut players = Players::new(4);
         init_cards(&mut players);
         init_no_cards(&mut players, 2);
@@ -224,12 +237,36 @@ mod test {
     }
 
     #[test]
-    fn beggar_is_lost_is_declarer_wins_no_tricks() {
+    fn beggar_is_lost_if_declarer_wins_no_tricks() {
         let mut players = Players::new(4);
         init_cards(&mut players);
         let mut cp = players.play_contract(2, Beggar(beggar::Open));
         let scores = score(&mut cp);
         assert_eq!(scores.len(), 1);
         assert_eq!(scores[2], -90);
+    }
+
+    #[test]
+    fn valat_is_won_if_declarer_wins_no_tricks() {
+        let mut players = Players::new(4);
+        for card in CARDS[0 .. 48].iter() {
+            players.player_mut(1).pile_mut().add_card(*card);
+        }
+        let mut cp = players.play_contract(1, Valat(valat::Normal));
+        let scores = score(&mut cp);
+        assert_eq!(scores.len(), 1);
+        assert_eq!(scores[1], 250);
+    }
+
+    #[test]
+    fn valat_is_lost_if_declarer_wins_no_tricks() {
+        let mut players = Players::new(4);
+        for card in CARDS[0 .. 47].iter() {
+            players.player_mut(3).pile_mut().add_card(*card);
+        }
+        let mut cp = players.play_contract(3, Valat(valat::Color));
+        let scores = score(&mut cp);
+        assert_eq!(scores.len(), 1);
+        assert_eq!(scores[3], -125);
     }
 }

@@ -55,6 +55,8 @@ pub enum Tarock {
     TarockSkis,
 }
 
+pub const NUM_CARDS: uint = 54;
+
 #[deriving(Clone, Show, Eq, PartialEq, Hash)]
 pub enum Card {
     TarockCard(Tarock),
@@ -327,6 +329,8 @@ impl Hand {
         }
     }
 }
+
+pub const TALON_SIZE: uint = 6;
 
 pub struct Talon {
     cards: Vec<Card>,

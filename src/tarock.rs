@@ -3,6 +3,7 @@
 #![feature(phase)]
 #![feature(globs)]
 #![feature(macro_rules)]
+#![feature(slicing_syntax)]
 
 #[cfg(test)]
 #[phase(plugin)]
