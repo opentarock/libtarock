@@ -7,8 +7,6 @@ use std::collections::HashSet;
 use std::collections::hashmap::SetItems;
 use std::rand::Rng;
 
-use contracts::ContractType;
-
 #[deriving(Clone, Show, Eq, PartialEq, Hash)]
 pub enum CardSuit {
     Clubs,
@@ -54,6 +52,8 @@ pub enum Tarock {
     Tarock21,
     TarockSkis,
 }
+
+pub const NUM_CARDS: uint = 54;
 
 #[deriving(Clone, Show, Eq, PartialEq, Hash)]
 pub enum Card {
@@ -328,6 +328,8 @@ impl Hand {
     }
 }
 
+pub const TALON_SIZE: uint = 6;
+
 pub struct Talon {
     cards: Vec<Card>,
 }
@@ -349,8 +351,8 @@ impl Talon {
 }
 
 pub struct CardDeal {
-    talon: Talon,
-    hands: Vec<Hand>,
+    pub talon: Talon,
+    pub hands: Vec<Hand>,
 }
 
 pub fn deal_four_player_standard(cards: &[Card]) -> CardDeal {
@@ -479,6 +481,10 @@ impl Trick {
     }
 }
 
+pub const MAX_POINTS: int = 70;
+
+pub const HALF_POINTS: int = 35;
+
 #[deriving(Clone)]
 pub struct Pile {
     cards: Vec<Card>,
@@ -489,7 +495,7 @@ impl Pile {
         Pile { cards: Vec::new() }
     }
 
-    fn add_card(&mut self, card: Card) {
+    pub fn add_card(&mut self, card: Card) {
         self.cards.push(card);
     }
 
@@ -499,16 +505,30 @@ impl Pile {
         }
     }
 
-    pub fn score(&self) -> uint {
-        let mut total = 0;
+    pub fn add_pile(&mut self, pile: &Pile) {
+        for card in pile.cards.iter() {
+            self.add_card(*card);
+        }
+    }
+
+    pub fn size(&self) -> uint {
+        self.cards.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.size() == 0
+    }
+
+    pub fn score(&self) -> int {
+        let mut total = 0i;
         for group in self.cards.as_slice().chunks(3) {
-            let score = group.iter().map(|c| c.value()).sum();
+            let score = group.iter().map(|c| c.value()).sum() as int;
             let num_valuable = group.iter().filter(|c| c.is_valuable()).count();
             if group.len() > 1 {
                 if score == 0 {
                     total += 1;
                 } else {
-                    total += score - (num_valuable - 1);
+                    total += score - (num_valuable as int - 1);
                 }
             } else if num_valuable > 0 {
                 total += score - 1;

@@ -142,7 +142,6 @@ mod test {
 
     use cards::*;
     use player::Player;
-    use util::*;
 
     #[test]
     fn announced_bonuses_are_worth_two_times_more() {
