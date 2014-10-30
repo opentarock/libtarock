@@ -108,7 +108,7 @@ impl Players {
     }
 
     // Constructs a new `ContractPlayers` with specified declarer and contract played.
-    pub fn play_contract<'a>(&'a self, declarer: PlayerId, contract: Contract) -> ContractPlayers<'a> {
+    pub fn play_contract<'a>(&'a mut self, declarer: PlayerId, contract: Contract) -> ContractPlayers<'a> {
         ContractPlayers {
             declarer: declarer as uint,
             players: self,
@@ -130,7 +130,7 @@ impl Players {
 // Players playing a contract.
 pub struct ContractPlayers<'a> {
     declarer: uint,
-    players: &'a Players,
+    players: &'a mut Players,
     contract: Contract,
 }
 
